@@ -479,7 +479,7 @@ exp ::= LITERAL_ENTERO:e {:RESULT = new Expresion (scopeManager.searchType("INTE
 							if (!tipoI2.getName().equals("POINTER")){
 								semanticErrorManager.semanticFatalError(i2.getLexema() + " no es un puntero");
 							}else{							
-								RESULT = new Expresion (tipoI2,i2.getLine(),i2.getColumn());
+								RESULT = new Expresion (tipoI2,i2.getLine(),i2.getColumn()); //COMENTARIO
 							}
 						}	
 					}
@@ -568,14 +568,14 @@ sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUN
 								if (tipo instanceof TypeInteger){	
 									if(!(e.getTipo() instanceof TypeInteger)){ //O función probablemente
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");
-									}else{
-										
 									}								
 								}else if (tipo instanceof TypeBoolean){	
 									if(!(e.getTipo() instanceof TypeBoolean)){
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");
-									}else{
-									
+									}
+								}else if (tipo instanceof TypeFunction){	//EN CASO DE FUNCIONAR COMPROBAR TIPO DE RETORNO DE LA FUNCION
+									if(!(e.getTipo() instanceof TypeBoolean)){
+										semanticErrorManager.semanticFatalError("Tipos incompatibles");
 									}										
 								}							
 							}	
