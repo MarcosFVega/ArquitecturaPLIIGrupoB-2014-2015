@@ -1,0 +1,607 @@
+package compiler.syntax;
+
+// Declaración de importaciones 
+//(No modificar las proporcionadas. Se pueden agregar mas)
+
+import java_cup.runtime.Symbol;
+import java.util.*;
+
+import es.uned.lsi.compiler.lexical.*;
+import es.uned.lsi.compiler.code.*;
+import es.uned.lsi.compiler.intermediate.*;
+import es.uned.lsi.compiler.semantic.*;
+import es.uned.lsi.compiler.semantic.symbol.*;
+import es.uned.lsi.compiler.semantic.type.*;
+import es.uned.lsi.compiler.syntax.*;
+
+import compiler.CompilerContext;
+import compiler.lexical.*;
+import compiler.syntax.nonTerminal.*;
+import compiler.semantic.*;
+import compiler.semantic.symbol.*;
+import compiler.semantic.type.*;
+import compiler.intermediate.*;
+import compiler.code.*;
+// Declaración del código de usuario
+
+action code {:
+	
+	SyntaxErrorManager   syntaxErrorManager   = CompilerContext.getSyntaxErrorManager();
+	SemanticErrorManager semanticErrorManager = CompilerContext.getSemanticErrorManager ();
+	ScopeManagerIF       scopeManager         = CompilerContext.getScopeManager ();
+	FinalCodeFactoryIF   finalCodeFactory     = CompilerContext.getFinalCodeFactory ();
+
+:}	
+
+parser code {:
+	SyntaxErrorManager syntaxErrorManager = CompilerContext.getSyntaxErrorManager();
+	
+	public void syntax_error(Symbol symbol)
+	{ 
+	    Token token = (Token) symbol.value;
+	    syntaxErrorManager.syntaxError ("Error sintactico", token);	    
+	}
+		
+	public void unrecovered_syntax_error(java_cup.runtime.Symbol symbol)
+	{	
+	    Token token = (Token) symbol.value;
+	    syntaxErrorManager.syntaxFatalError ("Error fatal", token);
+	}
+:}
+
+// Declaración de terminales
+
+// Constantes literales
+terminal Token LITERAL_ENTERO;
+terminal Token LITERAL_CADENA;
+
+// Identificadores
+terminal Token ID;
+
+// Palabras reservadas
+terminal Token BEGIN;
+terminal Token BOOLEAN;
+terminal Token CONST;
+terminal Token DO;
+terminal Token ELSE;
+terminal Token END;
+terminal Token FALSE;
+terminal Token FOR;
+terminal Token FUNCTION;
+terminal Token IF;
+terminal Token INTEGER;
+terminal Token OR;
+terminal Token PROCEDURE;
+terminal Token PROGRAM;
+terminal Token RECORD;
+terminal Token THEN;
+terminal Token TO;
+terminal Token TRUE;
+terminal Token TYPE;
+terminal Token VAR;
+terminal Token WRITE;
+terminal Token WRITELN;
+
+// Delimitadores
+terminal Token PARENT_ABRIR;
+terminal Token PARENT_CERRAR;
+terminal Token COMA;
+terminal Token PUNTO_Y_COMA;
+terminal Token DOS_PUNTOS;
+terminal Token IGUAL;
+
+// Operadores
+terminal Token MENOS;
+terminal Token MAYOR_QUE;
+terminal Token DOS_PUNTOS_IGUAL;
+terminal Token PUNTO;
+terminal Token CIRCUNFLEJO;
+terminal Token ARROBA;
+
+// Declaración de no terminales
+// no modificar los propuestos
+non terminal program;
+non terminal Axiom axiom;
+non terminal declaraciones;
+non terminal bloque;
+non terminal secuencia_sentencias;
+non terminal sentencia;
+non terminal decl_tipos;
+non terminal decl_variables;
+non terminal decl_subprogramas;
+non terminal secuencia_constantes;
+non terminal constante;
+non terminal LiteralEnteroOLogico literal_entero_o_logico;
+non terminal Token literal_logico;
+non terminal secuencia_tipos;
+non terminal Tipo tipo;
+non terminal secuencia_variables;
+non terminal variabl;
+non terminal SecuenciaIDs secuencia_IDs;
+non terminal TipoDatos tipo_datos;
+non terminal TipoPrimitivo tipo_primitivo;
+non terminal SecuenciaCamposRegistro secuencia_campos_registro;
+non terminal CampoRegistro campo_registro;
+non terminal decl_procedimiento;
+non terminal decl_funcion;
+non terminal DeclaracionParametros decl_parametros;
+non terminal SecuenciaParametros secuencia_parametros;
+non terminal Parametro parametro;
+non terminal Expresion exp;
+non terminal SecuenciaParametros secuencia_parametros_llamada;
+non terminal sentencia_asignacion;
+non terminal SentenciaAsignacionIzq sentencia_asignacion_izq;
+non terminal llamada_subprograma;
+non terminal sentencia_if;
+non terminal sentencias_then_else_for;
+non terminal sentencia_for;
+non terminal sentencia_write;
+non terminal parametro_write;
+non terminal parte_else;
+
+// Declaración de relaciones de asociatividad
+// Declaración de relaciones de precedencia
+
+precedence left 		ELSE;
+precedence nonassoc		MAYOR_QUE, IGUAL;
+precedence left			MENOS, OR;
+precedence left			PUNTO, PARENT_ABRIR, PARENT_CERRAR;
+
+// Declaración de reglas de producción
+
+
+start with program;
+
+program ::= 
+  {: 
+        syntaxErrorManager.syntaxInfo ("Starting parsing..."); 
+   :}
+  axiom:ax
+  {: 
+  		// No modificar esta estructura, aunque se pueden añadir más acciones semánticas
+  		// Para la entrega de febrero pueden comentarse las sentencias siguientes:
+  		//List intermediateCode = ax.getIntermediateCode ();
+		//finalCodeFactory.setEnvironment(CompilerContext.getExecutionEnvironment());
+  		//finalCodeFactory.create (intermediateCode);
+  		// En caso de no comentarse las sentencias anteriores puede generar una excepcion
+  		// en las llamadas a cupTest y finalTest. Esto es debido a que 
+  		// aún no se tendrá implementada la generación de código intermedio ni final.
+  		// Para la entrega de junio y septiembre deberán descomentarse y usarse.	
+   :};
+
+
+axiom ::= PROGRAM:prg ID:id 
+		{:
+           scopeManager.openScope(id.getLexema());
+           ScopeIF scope = scopeManager.getCurrentScope();
+           System.out.println("Entrando en el ambito: " + scope.getName());
+           System.out.println("---------------------------------------------");
+           //Insertar todos los tipos simples en la TT
+		   TypeTableIF tablaTipos = scope.getTypeTable();	
+		   TypeSimple tipoBooleano = new TypeBoolean(scope);
+		   tablaTipos.addType(tipoBooleano);
+		   TypeSimple tipoEntero = new TypeInteger(scope);
+           tablaTipos.addType(tipoEntero);		
+		:} PUNTO_Y_COMA declaraciones bloque PUNTO; 
+		
+// Las declaraciones incluyen, de forma opcional pero siempre en este orden:
+// constantes, tipos, variables globales y subprogramas
+declaraciones ::= CONST secuencia_constantes decl_tipos 
+		| decl_tipos;
+
+decl_tipos ::= TYPE secuencia_tipos decl_variables 
+		| decl_variables;	
+
+
+decl_variables ::= VAR secuencia_variables decl_subprogramas 
+		| decl_subprogramas;
+
+
+decl_subprogramas ::= decl_subprogramas decl_procedimiento 
+		| decl_subprogramas decl_funcion 
+		| ;
+
+// Declaración de constantes (del programa principal o de un subprograma)
+secuencia_constantes ::= secuencia_constantes constante | constante;
+
+constante ::= ID:id IGUAL literal_entero_o_logico:lel PUNTO_Y_COMA
+			  {: 
+				  	ScopeIF scope = scopeManager.getCurrentScope();
+				  	SymbolTableIF sTabla = scope.getSymbolTable();
+				  	String name = id.getLexema();
+				  	Object value = lel.getValor();
+				  	
+				  	if (sTabla.containsSymbol (name)){
+				  		semanticErrorManager.semanticFatalError("Ya existe una constante con ese nombre");
+				  	}else{
+				  		TypeIF type;
+				  		if (value instanceof Integer) type = scopeManager.searchType("INTEGER");
+				  	    else type = scopeManager.searchType("BOOLEAN");
+				  		SymbolConstant sC = new SymbolConstant (scope,name,type);
+				  		sTabla.addSymbol(sC);
+				  		semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + name + " A LA TABLA DE SÍMBOLOS");
+				  	}
+			  :};
+
+literal_entero_o_logico ::= LITERAL_ENTERO 
+			| literal_logico;
+
+literal_logico ::= TRUE:b {: RESULT = b; :}
+		| FALSE:b {: RESULT = b; :};
+
+// Declaración de tipos (del programa principal o de un subprograma)
+secuencia_tipos ::= secuencia_tipos tipo | tipo;
+
+tipo ::= ID:id IGUAL RECORD secuencia_campos_registro:cr END PUNTO_Y_COMA 
+         {:
+         	ScopeIF scope = scopeManager.getCurrentScope();
+         	
+         	if (scope.getSymbolTable().containsSymbol(id.getLexema()))
+         		semanticErrorManager.semanticFatalError("Ya existe un registro con ese nombre en el mismo ámbito");
+            else{
+            	TypeTableIF tablaT = scope.getTypeTable();
+            	SymbolTableIF tablaS = scope.getSymbolTable();            	
+            	TypeRecord registro = new TypeRecord(scope,id.getLexema());
+            	registro.setCampos(cr.getRegistros());
+            	tablaT.addType(id.getLexema(), registro);
+            	semanticErrorManager.semanticInfo("AGREGADO TIPO " + id.getLexema() + " A LA TABLA DE TIPOS");
+            	RESULT = new Tipo(registro);
+            }
+         :};
+
+secuencia_campos_registro ::= secuencia_campos_registro:sc campo_registro:cr 
+			{:				
+				if (sc.contieneCampo(cr.getNombre())){
+					semanticErrorManager.semanticFatalError("Ya existe un campo con el mismo nombre en el registro");
+				}else{
+				 	sc.addRegistro(cr.getNombre(),cr);
+					RESULT = new SecuenciaCamposRegistro(sc.getRegistros());
+				}	
+			:}
+			| campo_registro:c
+			{:				
+				RESULT  = new SecuenciaCamposRegistro(c);
+			:};
+
+campo_registro ::= ID:id DOS_PUNTOS tipo_primitivo:tp PUNTO_Y_COMA {:
+				   	  RESULT = new CampoRegistro(id.getLexema(),tp.getTipo());				   
+				   :};
+
+tipo_primitivo ::= INTEGER:id {: RESULT= new TipoPrimitivo(scopeManager.searchType("INTEGER")); :}
+		| BOOLEAN:id  {: RESULT= new TipoPrimitivo(scopeManager.searchType("BOOLEAN")); :}
+		| CIRCUNFLEJO INTEGER {: RESULT= new TipoPrimitivo(scopeManager.searchType("POINTER")); :};
+
+// Declaración de variables (del programa principal o de un subprograma)
+secuencia_variables ::= secuencia_variables variabl | variabl ; //¿HACER LO MISMO QUE LA SECUENCIA DE IDS?
+
+variabl ::= secuencia_IDs:sid DOS_PUNTOS tipo_datos:td PUNTO_Y_COMA
+			{:
+				HashMap ids = sid.getIDs();
+				Iterator it = ids.entrySet().iterator();
+				ScopeIF scope = scopeManager.getCurrentScope();
+				SymbolTableIF sTable = scope.getSymbolTable();	
+				
+				while (it.hasNext()) {
+					Map.Entry e = (Map.Entry)it.next();
+					
+					if(!(sTable.containsSymbol((String)e.getValue()))){
+						SymbolVariable sV = new SymbolVariable(scope,(String)e.getValue(),td.getTipo());
+						sTable.addSymbol((String)e.getValue(),sV);
+						
+						semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + (String)e.getValue() + " A LA TABLA DE SÍMBOLOS");
+					}else{
+						semanticErrorManager.semanticFatalError("Variable ya creada en el mismo ambito");
+					}
+				}					
+			:};
+
+secuencia_IDs ::= secuencia_IDs:sid COMA ID:id
+		{:	
+			if (sid.contiene(id.getLexema())){
+				semanticErrorManager.semanticFatalError("Más de una variable creada con el mismo nombre");
+			}else{
+				sid.addField(id.getLexema());
+				RESULT = new SecuenciaIDs(sid.getIDs());
+			}			
+		:}
+		| ID:id {: RESULT = new SecuenciaIDs(id.getLexema()); :};
+
+tipo_datos ::= tipo_primitivo:tp {: RESULT = new TipoDatos(tp.getTipo()); :} 
+		| ID;
+
+// Declaración de procedimientos
+decl_procedimiento ::= PROCEDURE ID:id decl_parametros:dparam 
+					{:
+					   if(!scopeManager.containsSymbol(id.getLexema())){
+					   	   ScopeIF scope = scopeManager.getCurrentScope();
+					   	   TypeProcedure tF = new TypeProcedure(scope,id.getLexema());
+					   	   SymbolProcedure sP = new SymbolProcedure(scope,id.getLexema(),tF);						   	   
+					   	   scope.getSymbolTable().addSymbol(sP);	
+					   	   semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + id.getLexema() + " A LA TABLA DE SÍMBOLOS");	
+					   	   
+				           ScopeIF nScope = scopeManager.openScope(id.getLexema());
+				           SymbolTableIF nTabla =  nScope.getSymbolTable();
+				           
+				           System.out.println("Entrando en el ambito: " + nScope.getName());
+           				   System.out.println("---------------------------------------------");
+				           				           
+				           for (Parametro p : dparam.getParametros()){
+				           		HashMap ids = p.getSecuenciaIDs().getIDs();
+				           		Iterator it = ids.entrySet().iterator();
+				           		
+				           		while (it.hasNext()) {
+									Map.Entry e = (Map.Entry)it.next();
+									
+									if(!(nTabla.containsSymbol((String)e.getValue()))){
+										SymbolParameter simboloParametro = new SymbolParameter(scope,(String)e.getValue(),p.getTipo());
+										nTabla.addSymbol((String)e.getValue(),simboloParametro);
+										semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + (String)e.getValue() + " A LA TABLA DE SÍMBOLOS");
+									}else{
+										semanticErrorManager.semanticFatalError("Parametro ya creado en el mismo ambito");
+									}
+								}	
+				           }	
+			           }else{
+			           	   semanticErrorManager.semanticFatalError("Nombre del procedimiento ya utilizado");
+			           }						
+					:} PUNTO_Y_COMA declaraciones bloque PUNTO_Y_COMA {: 					
+						
+						System.out.println("Saliendo del ambito: " + scopeManager.getCurrentScope().getName());
+           				System.out.println("---------------------------------------------");
+						scopeManager.closeScope(); 
+						:};	
+
+decl_parametros ::= PARENT_ABRIR secuencia_parametros:sp PARENT_CERRAR {: RESULT = new DeclaracionParametros(sp.getParametros()); :} 
+		 | PARENT_ABRIR PARENT_CERRAR {: RESULT = new DeclaracionParametros(); :};
+
+secuencia_parametros ::= secuencia_parametros:sp PUNTO_Y_COMA parametro:p
+						{:
+							if (sp.contiene(p)){
+								semanticErrorManager.semanticFatalError("Ya existe un parametro con el mismo nombre");
+							}else{
+								sp.addParametro(p);
+								RESULT = new SecuenciaParametros(sp.getParametros());
+							}
+						:}
+			| parametro:p {: RESULT = new SecuenciaParametros(p); :};
+
+parametro ::= secuencia_IDs:sid DOS_PUNTOS tipo_primitivo:tp {: RESULT = new Parametro(sid,tp.getTipo()); :};
+
+// Declaración de función 
+decl_funcion ::= FUNCTION ID:id decl_parametros:dparam DOS_PUNTOS tipo_primitivo:tp  PUNTO_Y_COMA 
+					{:
+					   if(!scopeManager.containsSymbol(id.getLexema())){
+					   	   ScopeIF scope = scopeManager.getCurrentScope();
+					   	   TypeFunction tF = new TypeFunction(scope,id.getLexema());
+					   	   SymbolFunction sF = new SymbolFunction(scope,id.getLexema(),tp.getTipo());						   	   
+					   	   scope.getSymbolTable().addSymbol(sF);		
+					   	   
+				           ScopeIF nScope = scopeManager.openScope(id.getLexema());
+				           SymbolTableIF nTabla =  nScope.getSymbolTable();
+				           
+				           System.out.println("Entrando en el ambito: " + nScope.getName());
+           				   System.out.println("---------------------------------------------");
+				           				           
+				           for (Parametro p : dparam.getParametros()){
+				           		HashMap ids = p.getSecuenciaIDs().getIDs();
+				           		Iterator it = ids.entrySet().iterator();
+				           		
+				           		while (it.hasNext()) {
+									Map.Entry e = (Map.Entry)it.next();
+									
+									if(!(nTabla.containsSymbol((String)e.getValue()))){
+										SymbolParameter simboloParametro = new SymbolParameter(scope,(String)e.getValue(),p.getTipo());
+										nTabla.addSymbol((String)e.getValue(),simboloParametro);
+									}else{
+										semanticErrorManager.semanticFatalError("Parametro ya creado en el mismo ambito");
+									}
+								}	
+				           }	
+			           }else{
+			           	   semanticErrorManager.semanticFatalError("Nombre de la funcion ya utilizado");
+			           }						
+					:}declaraciones bloque  PUNTO_Y_COMA{: 					
+						
+						System.out.println("Saliendo del ambito: " + scopeManager.getCurrentScope().getName());
+           				System.out.println("---------------------------------------------");
+						scopeManager.closeScope(); 
+						:} ;
+
+// Llamada a función o procedimiento (se diferencia en el análisis semántico de la llamada)
+llamada_subprograma ::= ID PARENT_ABRIR secuencia_parametros_llamada PARENT_CERRAR 
+		| ID PARENT_ABRIR PARENT_CERRAR ;
+
+secuencia_parametros_llamada ::= secuencia_parametros_llamada COMA exp 
+				 | exp;
+
+// Expresiones
+exp ::= LITERAL_ENTERO:e {:RESULT = new Expresion (scopeManager.searchType("INTEGER"), e.getLine(), e.getColumn());:}
+	| ID:id {:
+				ScopeIF scope = scopeManager.getCurrentScope();
+				if (!scope.getSymbolTable().containsSymbol(id.getLexema())){
+					semanticErrorManager.semanticFatalError(id.getLexema() + " no definido");
+				}else{
+					SymbolIF simbolo = scope.getSymbolTable().getSymbol(id.getLexema());
+					RESULT = new Expresion (simbolo.getType(),id.getLine(),id.getColumn());
+				}
+			:}	
+	| ID:id CIRCUNFLEJO 
+		{:
+				ScopeIF scope = scopeManager.getCurrentScope();
+				if (!scope.getSymbolTable().containsSymbol(id.getLexema())){
+					semanticErrorManager.semanticFatalError(id.getLexema() + " no definido");
+				}else{					
+					SymbolIF simbolo = scope.getSymbolTable().getSymbol(id.getLexema());
+					if (!simbolo.getType().getName().equals("POINTER")){
+						semanticErrorManager.semanticFatalError(id.getLexema() + " no es un puntero");
+					}else{
+						RESULT = new Expresion (simbolo.getType(),id.getLine(),id.getColumn());
+					}
+				}
+		:}
+	| ID:i1 PUNTO ID:i2 
+		{:
+				ScopeIF scope = scopeManager.getCurrentScope();
+				if (!scope.getSymbolTable().containsSymbol(i1.getLexema())){
+					semanticErrorManager.semanticFatalError(i1.getLexema() + " no definido");
+				}else{	
+					if (!scope.getSymbolTable().containsSymbol(i2.getLexema())){
+					semanticErrorManager.semanticFatalError(i2.getLexema() + " no definido");
+					}else{	
+						SymbolIF simbolo = scope.getSymbolTable().getSymbol(i1.getLexema());
+						TypeRecord registro = (TypeRecord)simbolo.getType();						
+						if (!registro.contieneCampo(i2.getLexema())){
+							semanticErrorManager.semanticFatalError(i1.getLexema() + " no contiene el campo" +i2.getLexema());
+						}else{
+							HashMap<String,TypeIF> campos = registro.getCampos();
+							TypeIF tipoI2 = campos.get(i2.getLexema());
+							RESULT = new Expresion (tipoI2,i2.getLine(),i2.getColumn()); 
+						}	
+					}
+				}
+		:}
+	| ID:i1 PUNTO ID:i2 CIRCUNFLEJO 
+		{:
+				ScopeIF scope = scopeManager.getCurrentScope();
+				if (!scope.getSymbolTable().containsSymbol(i1.getLexema())){
+					semanticErrorManager.semanticFatalError(i1.getLexema() + " no definido");
+				}else{	
+					if (!scope.getSymbolTable().containsSymbol(i2.getLexema())){
+					semanticErrorManager.semanticFatalError(i2.getLexema() + " no definido");
+					}else{	
+						SymbolIF simbolo = scope.getSymbolTable().getSymbol(i1.getLexema());
+						TypeRecord registro = (TypeRecord)simbolo.getType();						
+						if (!registro.contieneCampo(i2.getLexema())){
+							semanticErrorManager.semanticFatalError(i1.getLexema() + " no contiene el campo" +i2.getLexema());
+						}else{
+							HashMap<String,TypeIF> campos = registro.getCampos();
+							TypeIF tipoI2 = campos.get(i2.getLexema());
+							if (!tipoI2.getName().equals("POINTER")){
+								semanticErrorManager.semanticFatalError(i2.getLexema() + " no es un puntero");
+							}else{							
+								RESULT = new Expresion (tipoI2,i2.getLine(),i2.getColumn());
+							}
+						}	
+					}
+				}
+		:}
+	| ARROBA ID 
+	| ARROBA ID PUNTO ID 
+	| TRUE {:RESULT = new Expresion (scopeManager.searchType("BOOLEAN"));:}
+	| FALSE {:RESULT = new Expresion (scopeManager.searchType("BOOLEAN"));:}
+	| exp:e1 MENOS exp:e2 
+		{:
+			TypeIF t1 = e1.getTipo();
+			TypeIF t2 = e2.getTipo();
+			System.out.println(t1.getName());
+			System.out.println(t2.getName());
+			if (!t1.getName().equals("INTEGER") || !t2.getName().equals("INTEGER")){
+				semanticErrorManager.semanticFatalError("Tipos no compatibles con el operador '-'");
+			}else{			
+				RESULT = new Expresion (scopeManager.searchType("INTEGER"));
+			}
+		:}
+	| exp:e1 OR exp:e2 /*
+		 {:	
+			TypeIF t1 = e1.getTipo();
+			TypeIF t2 = e2.getTipo();
+			
+			if (!t1.getName().equals("BOOLEAN") && !t2.getName().equals("BOOLEAN")){
+				semanticErrorManager.semanticFatalError("Tipos no compatibles para la disyuncion");
+			}else{			
+				RESULT = new Expresion (scopeManager.searchType("BOOLEAN"));
+			}
+		:}	*/
+	| exp:e1 MAYOR_QUE exp:e2 
+		{:
+			TypeIF t1 = e1.getTipo();
+			TypeIF t2 = e2.getTipo();
+			
+			if (!t1.getName().equals("INTEGER") || !t2.getName().equals("INTEGER")){
+				semanticErrorManager.semanticFatalError("Tipos no compatibles con el operador >");
+			}else{
+				RESULT = new Expresion (scopeManager.searchType("BOOLEAN"));					
+			}	
+		:}
+	| exp:e1 IGUAL exp:e2 
+		{:
+			TypeIF t1 = e1.getTipo();
+			TypeIF t2 = e2.getTipo();
+			
+			if (t1.getName() != t2.getName()){
+				semanticErrorManager.semanticFatalError("Tipos no compatibles");
+			}else{
+				RESULT = new Expresion (scopeManager.searchType("BOOLEAN"));					
+			}	
+		:}
+	| PARENT_ABRIR exp:e PARENT_CERRAR 
+		{:
+			RESULT = e;
+		:}
+	| llamada_subprograma;
+
+
+// Bloque de sentencias
+bloque ::= BEGIN secuencia_sentencias END 
+	| BEGIN END ;
+
+secuencia_sentencias ::= secuencia_sentencias  sentencia 
+			| sentencia;
+
+sentencia ::= sentencia_asignacion 
+		| sentencia_if 
+		| sentencia_for 
+		| llamada_subprograma PUNTO_Y_COMA 
+		| sentencia_write;
+
+// Sentencia asignación
+sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUNTO_Y_COMA
+						{:
+							ScopeIF scope = scopeManager.getCurrentScope();
+							
+							if (!scope.getSymbolTable().containsSymbol(sai.getId())){
+								semanticErrorManager.semanticFatalError("Símbolo no definido");
+							}else{
+								SymbolIF simbolo = scopeManager.searchSymbol(sai.getId());
+								TypeIF tipo = simbolo.getType();
+								
+								if (tipo instanceof TypeInteger){	
+									if(!(e.getTipo() instanceof TypeInteger)){ //O función probablemente
+										semanticErrorManager.semanticFatalError("Tipos incompatibles");
+									}else{
+										
+									}								
+								}else if (tipo instanceof TypeBoolean){	
+									if(!(e.getTipo() instanceof TypeBoolean)){
+										semanticErrorManager.semanticFatalError("Tipos incompatibles");
+									}else{
+									
+									}										
+								}							
+							}	
+						:};
+
+sentencia_asignacion_izq ::= ID:id {: RESULT = new SentenciaAsignacionIzq(id.getLexema(),false); :}
+			| ID:id CIRCUNFLEJO {: RESULT = new SentenciaAsignacionIzq(id.getLexema(),true); :}			
+			| ID:id PUNTO ID:campo 
+			| ID:id PUNTO ID:campo CIRCUNFLEJO;
+
+// Sentencia de control de flujo condicional if-then-else
+sentencia_if ::= IF PARENT_ABRIR exp PARENT_CERRAR THEN sentencias_then_else_for parte_else;	
+
+sentencias_then_else_for ::= bloque PUNTO_Y_COMA 
+			| sentencia;
+
+parte_else ::= ELSE sentencias_then_else_for 
+		| ;
+
+// Sentencia de control de flujo iterativo for (las sentencias dentro de un bucle for siguen las mismas normas que para el if)
+sentencia_for ::= FOR PARENT_ABRIR ID  DOS_PUNTOS_IGUAL exp  TO exp  PARENT_CERRAR DO sentencias_then_else_for;
+
+// Sentencias write y writeln
+sentencia_write ::= WRITE PARENT_ABRIR parametro_write  PARENT_CERRAR PUNTO_Y_COMA 
+		| WRITELN PARENT_ABRIR PARENT_CERRAR PUNTO_Y_COMA;
+
+parametro_write ::= exp 
+		| LITERAL_CADENA 
+		| ;
