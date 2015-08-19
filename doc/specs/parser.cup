@@ -577,6 +577,14 @@ sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUN
 									if(!(e.getTipo() instanceof TypeBoolean)){
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");
 									}										
+								}else if (tipo instanceof TypeRecord){	
+									TypeRecord tipoRegistro = (TypeRecord)tipo;
+									TypeIF tipoCampo = tipoRegistro.tipoCampo(sai.getCampo());
+									if (tipoCampo instanceof TypeInteger && !(e.getTipo() instanceof TypeInteger)){	
+										semanticErrorManager.semanticFatalError("Tipos incompatibles");											
+									}else if (tipoCampo instanceof TypeBoolean && !(e.getTipo() instanceof TypeBoolean)){
+										semanticErrorManager.semanticFatalError("Tipos incompatibles");
+									}																
 								}							
 							}	
 						:};

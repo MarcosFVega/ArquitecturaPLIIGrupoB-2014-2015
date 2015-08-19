@@ -2,11 +2,14 @@ package compiler.syntax.nonTerminal;
 
 public class SentenciaAsignacionIzq extends NonTerminal{
 	private String id;
-	private boolean puntero;
+	private String campo;
 	
-	public SentenciaAsignacionIzq(String id, boolean puntero){
+	public SentenciaAsignacionIzq(String id){
 		this.id=id;
-		this.puntero=puntero;
+	}
+	
+	public SentenciaAsignacionIzq(String id, String campo){
+		this.id=id;
 	}
 
 	public String getId() {
@@ -17,12 +20,12 @@ public class SentenciaAsignacionIzq extends NonTerminal{
 		this.id = id;
 	}
 
-	public boolean isPuntero() {
-		return puntero;
+	public String getCampo() {
+		return campo;
 	}
 
-	public void setPuntero(boolean puntero) {
-		this.puntero = puntero;
+	public void setCampo(String campo) {
+		this.campo = campo;
 	}
 
 }

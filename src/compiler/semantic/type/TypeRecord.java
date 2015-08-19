@@ -73,4 +73,8 @@ public class TypeRecord
 	public void setCampos(HashMap campos) {
 		this.campos = campos;
 	}
+	
+	public TypeIF tipoCampo(String campo){
+		return (TypeRecord)campos.get(campo);
+	}
 }
