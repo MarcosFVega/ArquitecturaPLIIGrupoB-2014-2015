@@ -595,7 +595,13 @@ sentencia_asignacion_izq ::= ID:id {: RESULT = new SentenciaAsignacionIzq(id.get
 			| ID:id PUNTO ID:campo CIRCUNFLEJO {: RESULT = new SentenciaAsignacionIzq(id.getLexema()); :};
 
 // Sentencia de control de flujo condicional if-then-else
-sentencia_if ::= IF PARENT_ABRIR exp PARENT_CERRAR THEN sentencias_then_else_for parte_else;	
+sentencia_if ::= IF PARENT_ABRIR exp:e PARENT_CERRAR THEN sentencias_then_else_for parte_else
+				{:	
+					if(!(e.getTipo() instanceof TypeBoolean)){
+						semanticErrorManager.semanticFatalError("La expresión de la condición debe ser de tipo Boolean")
+					}
+					
+				:};	
 
 sentencias_then_else_for ::= bloque PUNTO_Y_COMA 
 			| sentencia;
