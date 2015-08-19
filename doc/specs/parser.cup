@@ -589,10 +589,10 @@ sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUN
 							}	
 						:};
 
-sentencia_asignacion_izq ::= ID:id {: RESULT = new SentenciaAsignacionIzq(id.getLexema(),false); :}
-			| ID:id CIRCUNFLEJO {: RESULT = new SentenciaAsignacionIzq(id.getLexema(),true); :}			
-			| ID:id PUNTO ID:campo 
-			| ID:id PUNTO ID:campo CIRCUNFLEJO;
+sentencia_asignacion_izq ::= ID:id {: RESULT = new SentenciaAsignacionIzq(id.getLexema()); :}
+			| ID:id CIRCUNFLEJO {: RESULT = new SentenciaAsignacionIzq(id.getLexema()); :}			
+			| ID:id PUNTO ID:campo {: RESULT = new SentenciaAsignacionIzq(id.getLexema(),campo.getLexema()); :}
+			| ID:id PUNTO ID:campo CIRCUNFLEJO {: RESULT = new SentenciaAsignacionIzq(id.getLexema()); :};
 
 // Sentencia de control de flujo condicional if-then-else
 sentencia_if ::= IF PARENT_ABRIR exp PARENT_CERRAR THEN sentencias_then_else_for parte_else;	
