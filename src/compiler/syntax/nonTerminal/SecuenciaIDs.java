@@ -3,10 +3,10 @@ import es.uned.lsi.compiler.semantic.type.*;
 import java.util.*;
 
 public class SecuenciaIDs extends NonTerminal{
-	private HashMap ids = new HashMap();
+	private List<String> ids = new ArrayList<String>();
 	private TypeIF tipo;
 	
-	public SecuenciaIDs(HashMap ids){
+	public SecuenciaIDs(List<String> ids){
 		this.ids = ids;		
 	}
 	
@@ -23,15 +23,20 @@ public class SecuenciaIDs extends NonTerminal{
 	}
 	
 	public void addField(String s){
-		ids.put(s,s);
+		ids.add(s);
 	}
 	
-	public HashMap getIDs(){
+	public List<String> getIDs(){
 		return ids;
 	}
 	
 	public boolean contiene(String id){
 		return false;
+	}
+	
+	public int getSize()
+	{
+		return ids.size();
 	}
 
 }

@@ -128,7 +128,7 @@ non terminal DeclaracionParametros decl_parametros;
 non terminal SecuenciaParametros secuencia_parametros;
 non terminal Parametro parametro;
 non terminal Expresion exp;
-non terminal SecuenciaParametros secuencia_parametros_llamada;
+non terminal SecuenciaParametrosLlamada secuencia_parametros_llamada;
 non terminal sentencia_asignacion;
 non terminal SentenciaAsignacionIzq sentencia_asignacion_izq;
 non terminal llamada_subprograma;
@@ -276,23 +276,22 @@ secuencia_variables ::= secuencia_variables variabl | variabl ; //¿HACER LO MISM
 
 variabl ::= secuencia_IDs:sid DOS_PUNTOS tipo_datos:td PUNTO_Y_COMA
 			{:
-				HashMap ids = sid.getIDs();
-				Iterator it = ids.entrySet().iterator();
+				List<String> ids = sid.getIDs();
 				ScopeIF scope = scopeManager.getCurrentScope();
 				SymbolTableIF sTable = scope.getSymbolTable();	
 				
-				while (it.hasNext()) {
-					Map.Entry e = (Map.Entry)it.next();
+				for(String s: ids){
 					
-					if(!(sTable.containsSymbol((String)e.getValue()))){
-						SymbolVariable sV = new SymbolVariable(scope,(String)e.getValue(),td.getTipo());
-						sTable.addSymbol((String)e.getValue(),sV);
+					if(!(sTable.containsSymbol(s))){
+						SymbolVariable sV = new SymbolVariable(scope,s,td.getTipo());
+						sTable.addSymbol(s,sV);
 						
-						semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + (String)e.getValue() + " A LA TABLA DE SÍMBOLOS");
+						semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + s + " A LA TABLA DE SÍMBOLOS");
 					}else{
 						semanticErrorManager.semanticFatalError("Variable ya creada en el mismo ambito");
 					}
-				}					
+				}
+									
 			:};
 
 secuencia_IDs ::= secuencia_IDs:sid COMA ID:id
@@ -326,16 +325,14 @@ decl_procedimiento ::= PROCEDURE ID:id decl_parametros:dparam
            				   System.out.println("---------------------------------------------");
 				           				           
 				           for (Parametro p : dparam.getParametros()){
-				           		HashMap ids = p.getSecuenciaIDs().getIDs();
-				           		Iterator it = ids.entrySet().iterator();
+				           		List<String> ids = p.getSecuenciaIDs().getIDs();
 				           		
-				           		while (it.hasNext()) {
-									Map.Entry e = (Map.Entry)it.next();
+				           		for (String s: ids){
 									
-									if(!(nTabla.containsSymbol((String)e.getValue()))){
-										SymbolParameter simboloParametro = new SymbolParameter(scope,(String)e.getValue(),p.getTipo());
-										nTabla.addSymbol((String)e.getValue(),simboloParametro);
-										semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + (String)e.getValue() + " A LA TABLA DE SÍMBOLOS");
+									if(!(nTabla.containsSymbol(s))){
+										SymbolParameter simboloParametro = new SymbolParameter(scope,s,p.getTipo());
+										nTabla.addSymbol(s,simboloParametro);
+										semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + s + " A LA TABLA DE SÍMBOLOS");
 									}else{
 										semanticErrorManager.semanticFatalError("Parametro ya creado en el mismo ambito");
 									}
@@ -383,15 +380,14 @@ decl_funcion ::= FUNCTION ID:id decl_parametros:dparam DOS_PUNTOS tipo_primitivo
            				   System.out.println("---------------------------------------------");
 				           				           
 				           for (Parametro p : dparam.getParametros()){
-				           		HashMap ids = p.getSecuenciaIDs().getIDs();
-				           		Iterator it = ids.entrySet().iterator();
+				           		List<String> ids = p.getSecuenciaIDs().getIDs();
 				           		
-				           		while (it.hasNext()) {
-									Map.Entry e = (Map.Entry)it.next();
+				           		for (String s: ids){
 									
-									if(!(nTabla.containsSymbol((String)e.getValue()))){
-										SymbolParameter simboloParametro = new SymbolParameter(scope,(String)e.getValue(),p.getTipo());
-										nTabla.addSymbol((String)e.getValue(),simboloParametro);
+									if(!(nTabla.containsSymbol(s))){
+										SymbolParameter simboloParametro = new SymbolParameter(scope,s,p.getTipo());
+										nTabla.addSymbol(s,simboloParametro);
+										semanticErrorManager.semanticInfo("AGREGADO SÍMBOLO " + s + " A LA TABLA DE SÍMBOLOS");
 									}else{
 										semanticErrorManager.semanticFatalError("Parametro ya creado en el mismo ambito");
 									}
@@ -408,11 +404,53 @@ decl_funcion ::= FUNCTION ID:id decl_parametros:dparam DOS_PUNTOS tipo_primitivo
 						:} ;
 
 // Llamada a función o procedimiento (se diferencia en el análisis semántico de la llamada)
-llamada_subprograma ::= ID PARENT_ABRIR secuencia_parametros_llamada PARENT_CERRAR 
-		| ID PARENT_ABRIR PARENT_CERRAR ;
+llamada_subprograma ::= ID:id PARENT_ABRIR secuencia_parametros_llamada:spl  PARENT_CERRAR 
+						{:
+							ScopeIF scope = scopeManager.getCurrentScope();
+							if (!scope.getSymbolTable().containsSymbol(id.getLexema())){
+								semanticErrorManager.semanticFatalError(id.getLexema() + " no definido");
+							}else{
+								SymbolIF simbolo = scopeManager.searchSymbol(id.getLexema());
+								TypeIF tipo = simbolo.getType();
+								
+								if (!(tipo instanceof TypeFunction)){		
+									semanticErrorManager.semanticFatalError(id.getLexema() + " no es una función");									
+								}else{
+									TypeFunction funcion = (TypeFunction) tipo;
+									if(!funcion.compararParametros(spl.getParametros())){	
+										semanticErrorManager.semanticFatalError("No coinciden los tipos");
+									}else{
+									 /*********************************CREAR UNA LLAMADA***************************************/
+									}									
+								}
+							}
+						:}
+		| ID:id PARENT_ABRIR PARENT_CERRAR
+			{:
+				ScopeIF scope = scopeManager.getCurrentScope();
+				if (!scope.getSymbolTable().containsSymbol(id.getLexema())){
+					semanticErrorManager.semanticFatalError(id.getLexema() + " no definido");
+				}else{
+					SymbolIF simbolo = scopeManager.searchSymbol(id.getLexema());
+					TypeIF tipo = simbolo.getType();
+					if (!(tipo instanceof TypeFunction)){		
+						semanticErrorManager.semanticFatalError(id.getLexema() + " no es una función");									
+					}else{
+						TypeFunction funcion = (TypeFunction) tipo;
+						if (!(funcion.getParametros().size()==0)){
+							semanticErrorManager.semanticFatalError("Se esperaban parámetros de entrada");
+						}else{
+							/*********************************CREAR UNA LLAMADA***************************************/
+						}
+					}
+				}
+			:};
 
-secuencia_parametros_llamada ::= secuencia_parametros_llamada COMA exp 
-				 | exp;
+secuencia_parametros_llamada ::= secuencia_parametros_llamada:spl COMA exp:e 
+						{:
+							RESULT = new SecuenciaParametrosLlamada(spl.getParametros(), e);						
+						:}
+				 | exp:e {: RESULT = new SecuenciaParametrosLlamada(e); :};
 
 // Expresiones
 exp ::= LITERAL_ENTERO:e {:RESULT = new Expresion (scopeManager.searchType("INTEGER"), e.getLine(), e.getColumn());:}
@@ -598,7 +636,7 @@ sentencia_asignacion_izq ::= ID:id {: RESULT = new SentenciaAsignacionIzq(id.get
 sentencia_if ::= IF PARENT_ABRIR exp:e PARENT_CERRAR THEN sentencias_then_else_for parte_else
 				{:	
 					if(!(e.getTipo() instanceof TypeBoolean)){
-						semanticErrorManager.semanticFatalError("La expresión de la condición debe ser de tipo Boolean")
+						semanticErrorManager.semanticFatalError("La expresión de la condición debe ser de tipo Boolean");
 					}
 					
 				:};	
@@ -610,7 +648,7 @@ parte_else ::= ELSE sentencias_then_else_for
 		| ;
 
 // Sentencia de control de flujo iterativo for (las sentencias dentro de un bucle for siguen las mismas normas que para el if)
-sentencia_for ::= FOR PARENT_ABRIR ID  DOS_PUNTOS_IGUAL exp  TO exp  PARENT_CERRAR DO sentencias_then_else_for;
+sentencia_for ::= FOR PARENT_ABRIR ID DOS_PUNTOS_IGUAL exp  TO exp  PARENT_CERRAR DO sentencias_then_else_for;
 
 // Sentencias write y writeln
 sentencia_write ::= WRITE PARENT_ABRIR parametro_write  PARENT_CERRAR PUNTO_Y_COMA 

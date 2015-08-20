@@ -1,4 +1,6 @@
 package compiler.syntax.nonTerminal;
+import java.util.List;
+
 import es.uned.lsi.compiler.semantic.type.*;
 
 public class Parametro extends NonTerminal{
@@ -21,9 +23,17 @@ public class Parametro extends NonTerminal{
 	public SecuenciaIDs getSecuenciaIDs() {
 		return ids;
 	}
+	
+	public List<String> getIDs(){
+		return ids.getIDs();
+	} 
 
 	public void setSecuenciaIDs(SecuenciaIDs ids) {
 		this.ids = ids;
+	}
+	
+	public int getSize(){
+		return ids.getSize();		 
 	}
 
 }
