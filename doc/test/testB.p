@@ -5,12 +5,12 @@ program once;
 	var
     z: integer;
 	
-	procedure decrementa (x:integer);
+	procedure decrementa (x,w,d:integer );
 
 	var
 		y:integer;
 
-	begin			
+	begin		
 		y:= x-1;
 		write("y(2):");
 		write(y);
@@ -21,8 +21,8 @@ begin
         write ("SUBPROGRAMAS PROCEDIMIENTOS");
         writeln();
 
-        z:=5-0;
-      //  decrementa (z);
+        z:=1;
+        decrementa (z,true);
 
 
 end.

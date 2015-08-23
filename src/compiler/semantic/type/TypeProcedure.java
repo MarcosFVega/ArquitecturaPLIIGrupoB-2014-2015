@@ -19,6 +19,7 @@ public class TypeProcedure
     extends TypeBase
 {   
 	private List<Parametro> parametros = new ArrayList<Parametro>();
+	private int numIds=0;
 	
     public TypeProcedure (ScopeIF scope)
     {
@@ -54,16 +55,26 @@ public class TypeProcedure
 		parametros.add(param);
 	}
 	
-	public boolean compararParametros(List<Expresion> parametrosLlamada){
+	public boolean compararParametros(List<Expresion> parametrosLlamada){		
 		int num = 0;
-		for (int i = 0; i < parametros.size(); i++) { 
-			Parametro param = parametros.get(i);
+
+		for (int i = 0; i < parametros.size(); i++) {
+			Parametro param = parametros.get(i);		
 			for (int j=0;j<param.getSize();j++){
-				if (param.getTipo().getName().equals(parametrosLlamada.get(num))){
+				if (!param.getTipo().getName().equals(parametrosLlamada.get(num).getTipo().getName())){					
 					return false;
-				}				
+				}	
+				num++;
 			}			
 		}		
 		return true;
+	}
+	
+	public void addId(){
+		numIds++;
+	}
+	
+	public int getNumIds(){
+		return numIds;
 	}
 }

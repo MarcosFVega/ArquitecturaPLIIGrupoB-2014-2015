@@ -1,6 +1,11 @@
 package compiler.semantic.type;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import compiler.syntax.nonTerminal.Parametro;
 import es.uned.lsi.compiler.semantic.ScopeIF;
+import es.uned.lsi.compiler.semantic.type.TypeIF;
 
 /**
  * Class for TypeFunction.
@@ -12,11 +17,9 @@ import es.uned.lsi.compiler.semantic.ScopeIF;
 public class TypeFunction
     extends TypeProcedure
 {   
-    
-    /**
-     * Constructor for TypeFunction.
-     * @param scope The declaration scope.
-     */
+	private List<Parametro> parametros = new ArrayList<Parametro>();
+	private TypeIF salida;
+	
     public TypeFunction (ScopeIF scope)
     {
         super (scope);
@@ -27,9 +30,10 @@ public class TypeFunction
      * @param scope The declaration scope
      * @param name The name of the function.
      */
-    public TypeFunction (ScopeIF scope, String name)
+    public TypeFunction (ScopeIF scope, String name, TypeIF tipo)
     {
         super (scope, name);
+        salida = tipo;
     }
     
     /**
@@ -42,4 +46,5 @@ public class TypeFunction
         // TODO: Student work
         return 1;
     }
+	
 }

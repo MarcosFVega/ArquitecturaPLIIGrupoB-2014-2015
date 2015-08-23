@@ -3,7 +3,6 @@ import es.uned.lsi.compiler.semantic.type.*;
 
 public class TipoPrimitivo extends NonTerminal{
 	private TypeIF tipo;
-	private int valor;
 	
 	public TipoPrimitivo(){
 	}
