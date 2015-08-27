@@ -1,28 +1,32 @@
-// subprogramas (paso por valor) procedimientos
+// subprogramas (paso por valor) funciones
 
-program once;
+program doce;
 
-	var
-    z: integer;
-	
-	procedure decrementa (x,w,d:integer );
 
-	var
-		y:integer;
 
-	begin		
-		y:= x-1;
-		write("y(2):");
-		write(y);
-	end;
+var
+        z,v: integer;
+
+
+procedure decrementa (x:integer);
+
+var
+        y:integer;
+
+        begin
+            y:= z-1;
+            decrementa(y);
+
+        end;
 
 begin
 
-        write ("SUBPROGRAMAS PROCEDIMIENTOS");
+        write ("SUBPROGRAMAS FUNCIONES");
         writeln();
 
-        z:=1;
-        decrementa (z,true);
+        z:=3;
+        v:= decrementa (z);
 
-
+       // write("v(2):");
+        //write(v);
 end.

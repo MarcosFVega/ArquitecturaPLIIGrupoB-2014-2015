@@ -1,6 +1,6 @@
 package compiler.syntax.nonTerminal;
 
-public class SentenciaAsignacionIzq extends NonTerminal{
+public class SentenciaAsignacionIzq extends Sentencia{
 	private String id;
 	private String campo;
 	

@@ -36,7 +36,15 @@ public class TypeFunction
         salida = tipo;
     }
     
-    /**
+    public TypeIF getSalida() {
+		return salida;
+	}
+
+	public void setSalida(TypeIF salida) {
+		this.salida = salida;
+	}
+
+	/**
      * Returns the size of the type.
      * @return the size of the type.
      */
