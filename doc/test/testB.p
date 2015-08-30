@@ -1,31 +1,37 @@
-// tipos estructurados RESGISTROS
+// Control de flujo for (sin cuerpo)
 
-program nueve;
+program trece;
 
-type
-        tipoPersona = record
-                dni: integer;
-                casado: boolean;
-        end;
+
 
 var
-       persona1: tipoPersona;
-
+        x,y,z,w: integer;
+		h: boolean;
 
 begin
-       write ("TIPOS ESTRUCTURADOS REGISTROS");
-	writeln();
 
-        persona1.dni:=12345;
-        persona1.casado:=true;
+        write ("CRONTROL FLUJO FOR");
+        writeln();
 
-       write ("persona1.dni(12345):");
-        write (persona1.dni);
-        write ("persona1.casado(true):");
-		
-       if (persona1.casado or false) then
-               write("true");
-        else
-                write("fail");
+
+       //simple
+       write("x(01234):");
+       for (x:=0 to 4) do
+          write(x);
+
+
+       // con cuerpo
+       write("y(345):");
+       for (y:=3 to h) do
+       begin
+            write(y);
+
+       end;
+
+       //iteraccion con variable
+       write("z(0123):");
+       w:=3;
+       for (z:=0 to w) do
+             write(z);
 
 end.

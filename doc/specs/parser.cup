@@ -181,7 +181,9 @@ axiom ::= PROGRAM:prg ID:id
 		   TypeSimple tipoBooleano = new TypeBoolean(scope);
 		   tablaTipos.addType(tipoBooleano);
 		   TypeSimple tipoEntero = new TypeInteger(scope);
-           tablaTipos.addType(tipoEntero);		
+           tablaTipos.addType(tipoEntero);	
+           TypePointer tipoPuntero = new TypePointer(scope,"POINTER");
+           tablaTipos.addType(tipoPuntero);	
 		:} PUNTO_Y_COMA declaraciones bloque PUNTO; 
 		
 // Las declaraciones incluyen, de forma opcional pero siempre en este orden:
@@ -210,8 +212,7 @@ constante ::= ID:id IGUAL literal_entero_o_logico:lel PUNTO_Y_COMA
 				  	ScopeIF scope = scopeManager.getCurrentScope();
 				  	SymbolTableIF sTabla = scope.getSymbolTable();
 				  	String name = id.getLexema();				  	
-				  	
-				  	System.out.println(name);
+
 				  	if (sTabla.containsSymbol (name)){
 				  		semanticErrorManager.semanticFatalError("Ya existe una constante con ese nombre");
 				  	}else{
@@ -288,12 +289,11 @@ variabl ::= secuencia_IDs:sid DOS_PUNTOS tipo_datos:td PUNTO_Y_COMA
 					if(!(sTable.containsSymbol(s))){
 						SymbolVariable sV = new SymbolVariable(scope,s,td.getTipo());
 						sTable.addSymbol(s,sV);						
-						semanticErrorManager.semanticInfo("AGREGADO SIMBOLO " + s + " A LA TABLA DE SIMBOLOS");						
+						semanticErrorManager.semanticInfo("AGREGADO SIMBOLO " + s + " DE TIPO " + td.getTipo().getName() + " A LA TABLA DE SIMBOLOS");						
 					}else{
 						semanticErrorManager.semanticFatalError("Variable ya creada en el mismo ambito");
 					}
-				}
-				
+				}				
 				RESULT = new Variabl();									
 			:};
 
@@ -381,11 +381,14 @@ decl_funcion ::= FUNCTION ID:id decl_parametros:dparam DOS_PUNTOS tipo_primitivo
 					   if(!scopeManager.containsSymbol(id.getLexema())){
 					   	   ScopeIF scope = scopeManager.getCurrentScope();
 					   	   TypeFunction tF = new TypeFunction(scope,id.getLexema(),tp.getTipo());
-					   	   SymbolFunction sF = new SymbolFunction(scope,id.getLexema(),tp.getTipo());						   	   
-					   	   scope.getSymbolTable().addSymbol(sF);		
-					   	   
+					   	   SymbolFunction sF = new SymbolFunction(scope,id.getLexema(),tF);						   	   
+					   	   scope.getSymbolTable().addSymbol(sF);	
+					   	   scope.getTypeTable().addType(tF);
+					   	   semanticErrorManager.semanticInfo("AGREGADO SIMBOLO " + id.getLexema() + " A LA TABLA DE SiMBOLOS");
+
 				           ScopeIF nScope = scopeManager.openScope(id.getLexema());
 				           SymbolTableIF nTabla =  nScope.getSymbolTable();
+				           TypeTableIF nTTabla = nScope.getTypeTable();	
 				           
 				           System.out.println("Entrando en el ambito: " + nScope.getName());
            				   System.out.println("---------------------------------------------");
@@ -425,12 +428,10 @@ llamada_subprograma ::= ID:id PARENT_ABRIR secuencia_parametros_llamada:spl PARE
 							}else{
 								SymbolIF simbolo = scopeManager.searchSymbol(id.getLexema());
 								TypeIF tipo = simbolo.getType();
-								
 								if (!(tipo instanceof TypeFunction) && !(tipo instanceof TypeProcedure)){		
 									semanticErrorManager.semanticFatalError(id.getLexema() + " no es un subprograma");									
 								}else{									
 									TypeProcedure funcion = (TypeProcedure) tipo;
-									System.out.println(funcion.getNumIds() + " " + spl.getParametros().size());
 									if(funcion.getNumIds()!=spl.getParametros().size()){	
 										semanticErrorManager.semanticFatalError("Numero de parametros incorrecto");	
 									}
@@ -486,7 +487,8 @@ exp ::= LITERAL_ENTERO:e {:RESULT = new Expresion (scopeManager.searchType("INTE
 				if (!scopeManager.containsSymbol(id.getLexema())){
 					semanticErrorManager.semanticFatalError(id.getLexema() + " no definido");
 				}else{					
-					SymbolIF simbolo = scopeManager.searchSymbol(id.getLexema());
+					SymbolIF simbolo = scopeManager.searchSymbol(id.getLexema());					
+			
 					if (!simbolo.getType().getName().equals("POINTER")){
 						semanticErrorManager.semanticFatalError(id.getLexema() + " no es un puntero");
 					}else{
@@ -505,9 +507,9 @@ exp ::= LITERAL_ENTERO:e {:RESULT = new Expresion (scopeManager.searchType("INTE
 					if (!registro.contieneCampo(i2.getLexema())){
 						semanticErrorManager.semanticFatalError(i1.getLexema() + " no contiene el campo" +i2.getLexema());
 					}else{
-				//		HashMap<String,CampoRegistro> campos = registro.getCampos();						
-				//		System.out.println(campos.get("dni"));
-				//	RESULT = new Expresion (tipoI2,i2.getLine(),i2.getColumn()); 
+						HashMap<String,CampoRegistro> campos = registro.getCampos();
+						TypeIF tipoI2 = campos.get(i2.getLexema()).getTipo();	
+						RESULT = new Expresion (tipoI2,i2.getLine(),i2.getColumn()); 
 					}	
 					
 				}
@@ -574,25 +576,23 @@ exp ::= LITERAL_ENTERO:e {:RESULT = new Expresion (scopeManager.searchType("INTE
 		{:
 			TypeIF t1 = e1.getTipo();
 			TypeIF t2 = e2.getTipo();
-			System.out.println(t1.getName());
-			System.out.println(t2.getName());
 			if (!t1.getName().equals("INTEGER") || !t2.getName().equals("INTEGER")){
 				semanticErrorManager.semanticFatalError("Tipos no compatibles con el operador '-'");
 			}else{			
 				RESULT = new Expresion (scopeManager.searchType("INTEGER"));
 			}
 		:}
-	| exp:e1 OR exp:e2 /*
+	| exp:e1 OR exp:e2 
 		 {:	
 			TypeIF t1 = e1.getTipo();
 			TypeIF t2 = e2.getTipo();
 			
-			if (!t1.getName().equals("BOOLEAN") && !t2.getName().equals("BOOLEAN")){
+			if (!t1.getName().equals("BOOLEAN") || !t2.getName().equals("BOOLEAN")){
 				semanticErrorManager.semanticFatalError("Tipos no compatibles para la disyuncion");
 			}else{			
 				RESULT = new Expresion (scopeManager.searchType("BOOLEAN"));
 			}
-		:}	*/
+		:}	
 	| exp:e1 MAYOR_QUE exp:e2 
 		{:
 			TypeIF t1 = e1.getTipo();
@@ -666,6 +666,10 @@ sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUN
 									}else if (tipoCampo instanceof TypeBoolean && (!(e.getTipo() instanceof TypeBoolean) && !(e.getTipo() instanceof TypeFunction))){
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");
 									}																
+								}else{	//PUNTERO	
+									if(!(e.getTipo() instanceof TypeInteger) && !(e.getTipo() instanceof TypeFunction)){ 
+										semanticErrorManager.semanticFatalError("Tipos incompatibles. Integer no es compatible con " + e.getTipo().getName());
+									}
 								}							
 							}	
 						:};
