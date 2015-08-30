@@ -102,7 +102,7 @@ terminal Token ARROBA;
 // no modificar los propuestos
 non terminal program;
 non terminal Axiom axiom;
-non terminal declaraciones;
+non terminal Declaraciones declaraciones;
 non terminal Bloque bloque;
 non terminal secuencia_sentencias;
 non terminal Sentencia sentencia;
@@ -160,13 +160,18 @@ program ::=
   {: 
   		// No modificar esta estructura, aunque se pueden añadir mas acciones semanticas
   		// Para la entrega de febrero pueden comentarse las sentencias siguientes:
-  		//List intermediateCode = ax.getIntermediateCode ();
-		//finalCodeFactory.setEnvironment(CompilerContext.getExecutionEnvironment());
-  		//finalCodeFactory.create (intermediateCode);
-  		// En caso de no comentarse las sentencias anteriores puede generar una excepcion
-  		// en las llamadas a cupTest y finalTest. Esto es debido a que 
-  		// aun no se tendra implementada la generacion de codigo intermedio ni final.
-  		// Para la entrega de junio y septiembre deberan descomentarse y usarse.	
+  		List intermediateCode = ax.getIntermediateCode ();
+		finalCodeFactory.setEnvironment(CompilerContext.getExecutionEnvironment());
+  		finalCodeFactory.create (intermediateCode);
+  		
+  		// CODIGO INTERMEDIO -- SALIDA POR PANTALLA
+		syntaxErrorManager.syntaxInfo("-----------------");
+		syntaxErrorManager.syntaxInfo("CODIGO INTERMEDIO");
+		syntaxErrorManager.syntaxInfo("-----------------");
+		Iterator it = intermediateCode.iterator();
+		while ( it.hasNext() ) {
+			syntaxErrorManager.syntaxInfo(it.next().toString());
+		}
    :};
 
 
@@ -174,22 +179,43 @@ axiom ::= PROGRAM:prg ID:id
 		{:
            scopeManager.openScope(id.getLexema());
            ScopeIF scope = scopeManager.getCurrentScope();
+           
            System.out.println("Entrando en el ambito: " + scope.getName());
            System.out.println("---------------------------------------------");
+           
            //Insertar todos los tipos simples en la TT
-		   TypeTableIF tablaTipos = scope.getTypeTable();	
+		   TypeTableIF tablaTipos = scope.getTypeTable();
+		   	
 		   TypeSimple tipoBooleano = new TypeBoolean(scope);
 		   tablaTipos.addType(tipoBooleano);
+		   
 		   TypeSimple tipoEntero = new TypeInteger(scope);
-           tablaTipos.addType(tipoEntero);	
+           tablaTipos.addType(tipoEntero);
+           	
            TypePointer tipoPuntero = new TypePointer(scope,"POINTER");
-           tablaTipos.addType(tipoPuntero);	
-		:} PUNTO_Y_COMA declaraciones bloque PUNTO; 
+           tablaTipos.addType(tipoPuntero);	           
+           
+		:} PUNTO_Y_COMA declaraciones:dec bloque:bloq PUNTO
+			{:
+				ScopeIF scope = scopeManager.getCurrentScope();				          				
+				
+                IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+                
+                cb.addQuadruple("INICIAR",null);
+                cb.addQuadruple("HALT", null);
+
+                List intermediateCode = cb.create();                                 
+                
+                Axioma axi = new Axioma();
+                axi.setIntermediateCode(intermediateCode);
+                RESULT = axi;
+               
+			:}; 
 		
 // Las declaraciones incluyen, de forma opcional pero siempre en este orden:
 // constantes, tipos, variables globales y subprogramas
-declaraciones ::= CONST secuencia_constantes decl_tipos 
-		| decl_tipos;
+declaraciones ::= CONST secuencia_constantes decl_tipos {: RESULT = new Declaraciones(); :}
+		| decl_tipos {: RESULT = new Declaraciones(); :};
 
 decl_tipos ::= TYPE secuencia_tipos decl_variables 
 		| decl_variables;	

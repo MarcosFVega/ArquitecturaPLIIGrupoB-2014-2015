@@ -1,37 +1,32 @@
-// Control de flujo for (sin cuerpo)
+// subprogramas (paso por valor) funciones
 
-program trece;
+program doce;
 
 
 
 var
-        x,y,z,w: integer;
-		h: boolean;
+        z,v: integer;
+
+
+function decrementa (x:integer):integer;
+
+var
+        y:integer;
+
+        begin
+            y:= x-1;
+            decrementa:=y;
+
+        end;
 
 begin
 
-        write ("CRONTROL FLUJO FOR");
+        write ("SUBPROGRAMAS FUNCIONES");
         writeln();
 
+        z:=3;
+        v:= decrementa (z);
 
-       //simple
-       write("x(01234):");
-       for (x:=0 to 4) do
-          write(x);
-
-
-       // con cuerpo
-       write("y(345):");
-       for (y:=3 to h) do
-       begin
-            write(y);
-
-       end;
-
-       //iteraccion con variable
-       write("z(0123):");
-       w:=3;
-       for (z:=0 to w) do
-             write(z);
-
+        write("v(2):");
+        write(v);
 end.

@@ -31,7 +31,7 @@ import es.uned.lsi.compiler.syntax.SyntaxErrorManager;
 public class FinalTestCase
 {
     private static SemanticErrorManager semanticErrorManager = null;
-    private static String sourceFileExtension = ".ha";  
+    private static String sourceFileExtension = ".p";  
     
     /**
      * Constructor for FinalTestCase.
