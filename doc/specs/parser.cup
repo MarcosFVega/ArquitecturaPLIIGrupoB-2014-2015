@@ -110,7 +110,7 @@ non terminal decl_tipos;
 non terminal decl_variables;
 non terminal decl_subprogramas;
 non terminal secuencia_constantes;
-non terminal constante;
+non terminal Constante constante;
 non terminal LiteralEnteroOLogico literal_entero_o_logico;
 non terminal Token literal_logico;
 non terminal secuencia_tipos;
@@ -202,29 +202,33 @@ decl_subprogramas ::= decl_subprogramas decl_procedimiento
 		| ;
 
 // Declaracion de constantes (del programa principal o de un subprograma)
-secuencia_constantes ::= secuencia_constantes constante | constante;
+secuencia_constantes ::= secuencia_constantes constante 
+						| constante;
 
 constante ::= ID:id IGUAL literal_entero_o_logico:lel PUNTO_Y_COMA
 			  {: 
 				  	ScopeIF scope = scopeManager.getCurrentScope();
 				  	SymbolTableIF sTabla = scope.getSymbolTable();
-				  	String name = id.getLexema();
-				  	Object value = lel.getValor();
+				  	String name = id.getLexema();				  	
 				  	
+				  	System.out.println(name);
 				  	if (sTabla.containsSymbol (name)){
 				  		semanticErrorManager.semanticFatalError("Ya existe una constante con ese nombre");
 				  	}else{
+				  		TypeIF tipoLiteral = lel.getTipo();
 				  		TypeIF type;
-				  		if (value instanceof Integer) type = scopeManager.searchType("INTEGER");
+				  		if (tipoLiteral instanceof TypeInteger) type = scopeManager.searchType("INTEGER");
 				  	    else type = scopeManager.searchType("BOOLEAN");
 				  		SymbolConstant sC = new SymbolConstant (scope,name,type);
 				  		sTabla.addSymbol(sC);
-				  		semanticErrorManager.semanticInfo("AGREGADO SiMBOLO " + name + " A LA TABLA DE SiMBOLOS");
+				  		semanticErrorManager.semanticInfo("AGREGADO CONSTANTE " + name + " A LA TABLA DE SiMBOLOS");
+				  		
+				  		RESULT = new Constante();
 				  	}
 			  :};
 
-literal_entero_o_logico ::= LITERAL_ENTERO 
-			| literal_logico;
+literal_entero_o_logico ::= LITERAL_ENTERO {: RESULT = new LiteralEnteroOLogico(scopeManager.searchType("INTEGER")); :}
+			| literal_logico {: RESULT = new LiteralEnteroOLogico(scopeManager.searchType("BOOLEAN")); :};
 
 literal_logico ::= TRUE:b {: RESULT = b; :}
 		| FALSE:b {: RESULT = b; :};
@@ -240,7 +244,7 @@ tipo ::= ID:id IGUAL RECORD secuencia_campos_registro:cr END PUNTO_Y_COMA
          		semanticErrorManager.semanticFatalError("Ya existe un registro con ese nombre en el mismo ambito");
             else{
             	TypeTableIF tablaT = scope.getTypeTable();
-            	SymbolTableIF tablaS = scope.getSymbolTable();            	
+            	SymbolTableIF tablaS = scope.getSymbolTable();            	            	
             	TypeRecord registro = new TypeRecord(scope,id.getLexema());
             	registro.setCampos(cr.getRegistros());
             	tablaT.addType(id.getLexema(), registro);
@@ -305,7 +309,12 @@ secuencia_IDs ::= secuencia_IDs:sid COMA ID:id
 		| ID:id {: RESULT = new SecuenciaIDs(id.getLexema()); :};
 
 tipo_datos ::= tipo_primitivo:tp {: RESULT = new TipoDatos(tp.getTipo()); :} 
-		| ID;
+		| ID:id 
+			{: 
+				if(!scopeManager.containsType(id.getLexema()))
+					semanticErrorManager.semanticFatalError("No existe el tipo " + id.getLexema());	
+				RESULT = new TipoDatos(scopeManager.searchType(id.getLexema())); 
+			:};
 
 // Declaracion de procedimientos
 decl_procedimiento ::= PROCEDURE ID:id decl_parametros:dparam 
@@ -408,7 +417,7 @@ decl_funcion ::= FUNCTION ID:id decl_parametros:dparam DOS_PUNTOS tipo_primitivo
 						:} ;
 
 // Llamada a funcion o procedimiento (se diferencia en el analisis semantico de la llamada)
-llamada_subprograma ::= ID:id PARENT_ABRIR secuencia_parametros_llamada:spl  PARENT_CERRAR 
+llamada_subprograma ::= ID:id PARENT_ABRIR secuencia_parametros_llamada:spl PARENT_CERRAR 
 						{:
 							ScopeIF scope = scopeManager.getCurrentScope();
 							if (!scopeManager.containsSymbol(id.getLexema())){
@@ -427,9 +436,8 @@ llamada_subprograma ::= ID:id PARENT_ABRIR secuencia_parametros_llamada:spl  PAR
 									}
 									if(!funcion.compararParametros(spl.getParametros())){											
 										semanticErrorManager.semanticFatalError("No coinciden los tipos");
-									}else{
-										
-									 RESULT = new LlamadaSubprograma();
+									}else{										
+									 	RESULT = new LlamadaSubprograma(id.getLexema());
 									}									
 								}
 							}
@@ -487,24 +495,21 @@ exp ::= LITERAL_ENTERO:e {:RESULT = new Expresion (scopeManager.searchType("INTE
 				}
 		:}
 	| ID:i1 PUNTO ID:i2 
-		{:
+		{:				
 				ScopeIF scope = scopeManager.getCurrentScope();
 				if (!scopeManager.containsSymbol(i1.getLexema())){
 					semanticErrorManager.semanticFatalError(i1.getLexema() + " no definido");
-				}else{	
-					if (!scopeManager.containsSymbol(i2.getLexema())){
-					semanticErrorManager.semanticFatalError(i2.getLexema() + " no definido");
-					}else{	
-						SymbolIF simbolo = scopeManager.searchSymbol(i1.getLexema());
-						TypeRecord registro = (TypeRecord)simbolo.getType();						
-						if (!registro.contieneCampo(i2.getLexema())){
-							semanticErrorManager.semanticFatalError(i1.getLexema() + " no contiene el campo" +i2.getLexema());
-						}else{
-							HashMap<String,TypeIF> campos = registro.getCampos();
-							TypeIF tipoI2 = campos.get(i2.getLexema());
-							RESULT = new Expresion (tipoI2,i2.getLine(),i2.getColumn()); 
-						}	
-					}
+				}else{							
+					SymbolIF simbolo = scopeManager.searchSymbol(i1.getLexema());
+					TypeRecord registro = (TypeRecord)simbolo.getType();						
+					if (!registro.contieneCampo(i2.getLexema())){
+						semanticErrorManager.semanticFatalError(i1.getLexema() + " no contiene el campo" +i2.getLexema());
+					}else{
+				//		HashMap<String,CampoRegistro> campos = registro.getCampos();						
+				//		System.out.println(campos.get("dni"));
+				//	RESULT = new Expresion (tipoI2,i2.getLine(),i2.getColumn()); 
+					}	
+					
 				}
 		:}
 	| ID:i1 PUNTO ID:i2 CIRCUNFLEJO 
@@ -615,8 +620,9 @@ exp ::= LITERAL_ENTERO:e {:RESULT = new Expresion (scopeManager.searchType("INTE
 			RESULT = e;
 		:}
 	| llamada_subprograma:ls 
-	{: 
-		RESULT = new Expresion((TypeFunction)ls.getTipo().getSalida()); 
+	{: 		
+		System.out.println("LLAMANDO AL SUBPROGRAMA " + ls.getNombre());
+		RESULT = new Expresion(scopeManager.searchType(ls.getNombre())); 
 	:};
 
 
@@ -645,23 +651,19 @@ sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUN
 								TypeIF tipo = simbolo.getType();
 								
 								if (tipo instanceof TypeInteger){	
-									if(!(e.getTipo() instanceof TypeInteger)){ //O funcion probablemente
-										semanticErrorManager.semanticFatalError("Tipos incompatibles");
+									if(!(e.getTipo() instanceof TypeInteger) && !(e.getTipo() instanceof TypeFunction)){ 
+										semanticErrorManager.semanticFatalError("Tipos incompatibles. Integer no es compatible con " + e.getTipo().getName());
 									}								
-								}else if (tipo instanceof TypeBoolean){	
+								}else if (tipo instanceof TypeBoolean && !(e.getTipo() instanceof TypeFunction)){	
 									if(!(e.getTipo() instanceof TypeBoolean)){
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");
-									}
-								}else if (tipo instanceof TypeFunction){	//EN CASO DE FUNCIONAR COMPROBAR TIPO DE RETORNO DE LA FUNCION
-									if(!(e.getTipo() instanceof TypeBoolean)){
-										semanticErrorManager.semanticFatalError("Tipos incompatibles");
-									}										
+									}																										
 								}else if (tipo instanceof TypeRecord){	
 									TypeRecord tipoRegistro = (TypeRecord)tipo;
 									TypeIF tipoCampo = tipoRegistro.tipoCampo(sai.getCampo());
-									if (tipoCampo instanceof TypeInteger && !(e.getTipo() instanceof TypeInteger)){	
+									if (tipoCampo instanceof TypeInteger && (!(e.getTipo() instanceof TypeInteger) && !(e.getTipo() instanceof TypeFunction))){	
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");											
-									}else if (tipoCampo instanceof TypeBoolean && !(e.getTipo() instanceof TypeBoolean)){
+									}else if (tipoCampo instanceof TypeBoolean && (!(e.getTipo() instanceof TypeBoolean) && !(e.getTipo() instanceof TypeFunction))){
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");
 									}																
 								}							
@@ -706,15 +708,14 @@ sentencia_for ::= FOR PARENT_ABRIR ID:id DOS_PUNTOS_IGUAL exp:e1 TO exp:e2 PAREN
 									semanticErrorManager.semanticFatalError("Las expresiones deben ser INTEGER");	
 								}
 								RESULT = new SentenciaFor();
-							}
-								
+							}								
 						}					
 					:};
 
 // Sentencias write y writeln
-sentencia_write ::= WRITE PARENT_ABRIR parametro_write  PARENT_CERRAR PUNTO_Y_COMA 
+sentencia_write ::= WRITE PARENT_ABRIR parametro_write PARENT_CERRAR PUNTO_Y_COMA 
 		| WRITELN PARENT_ABRIR PARENT_CERRAR PUNTO_Y_COMA;
 
-parametro_write ::= exp 
+parametro_write ::= exp:e {: RESULT = new ParametroWrite(); :} 
 		| LITERAL_CADENA 
 		| ;

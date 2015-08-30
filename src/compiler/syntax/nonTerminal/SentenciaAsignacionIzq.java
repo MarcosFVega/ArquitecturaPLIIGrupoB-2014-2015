@@ -10,6 +10,7 @@ public class SentenciaAsignacionIzq extends Sentencia{
 	
 	public SentenciaAsignacionIzq(String id, String campo){
 		this.id=id;
+		this.campo=campo;
 	}
 
 	public String getId() {

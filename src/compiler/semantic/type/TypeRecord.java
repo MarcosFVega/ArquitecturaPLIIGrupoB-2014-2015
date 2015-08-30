@@ -4,6 +4,8 @@ import es.uned.lsi.compiler.semantic.ScopeIF;
 import es.uned.lsi.compiler.semantic.type.*;
 import java.util.*;
 
+import compiler.syntax.nonTerminal.CampoRegistro;
+
 /**
  * Class for TypeRecord.
  */
@@ -15,7 +17,7 @@ public class TypeRecord
     extends TypeBase
 {   
     
-	private HashMap<String,TypeIF> campos = new HashMap<String,TypeIF>();
+	private HashMap<String,CampoRegistro> campos = new HashMap<String,CampoRegistro>();
     /**
      * Constructor for TypeRecord.
      * @param scope The declaration scope.
@@ -44,7 +46,7 @@ public class TypeRecord
         super (record.getScope (), record.getName ());
     } 
     
-    public void addField(String nombre, TypeIF tipo){
+    public void addField(String nombre, CampoRegistro tipo){
     	campos.put(nombre,tipo);
     }
     
@@ -75,6 +77,6 @@ public class TypeRecord
 	}
 	
 	public TypeIF tipoCampo(String campo){
-		return (TypeRecord)campos.get(campo);
+		return campos.get(campo).getTipo();
 	}
 }
