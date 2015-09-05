@@ -1,5 +1,14 @@
 INICIAR:
 MOVE #65535 .SP
 MOVE .SP .IY
+
+
+
+
+
+
+
+
+
 HALT
 

@@ -1,10 +1,11 @@
 package compiler.syntax.nonTerminal;
+import es.uned.lsi.compiler.intermediate.OperandIF;
 import es.uned.lsi.compiler.semantic.type.*;
 import es.*;
 
 public class Expresion extends NonTerminal{
 	private TypeIF tipo;
-	private boolean b_valor;
+	private OperandIF operando;
 	private int linea;
 	private int columna;
 	
@@ -13,6 +14,31 @@ public class Expresion extends NonTerminal{
 		this.linea=linea;
 		this.columna=columna;
 	}
+	
+	public OperandIF getOperando() {
+		return operando;
+	}
+
+	public void setOperando(OperandIF operando) {
+		this.operando = operando;
+	}
+
+	public int getLinea() {
+		return linea;
+	}
+
+	public void setLinea(int linea) {
+		this.linea = linea;
+	}
+
+	public int getColumna() {
+		return columna;
+	}
+
+	public void setColumna(int columna) {
+		this.columna = columna;
+	}
+
 
 	public Expresion(TypeIF tipo){		
 		this.tipo=tipo;
@@ -24,16 +50,7 @@ public class Expresion extends NonTerminal{
 
 	public void setTipo(TypeIF tipo) {
 		this.tipo = tipo;
-	}
-
-	public boolean isB_valor() {
-		return b_valor;
-	}
-
-	public void setB_valor(boolean b_valor) {
-		this.b_valor = b_valor;
-	}
-	
+	}	
 }
 	
 	

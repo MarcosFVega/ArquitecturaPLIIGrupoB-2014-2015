@@ -1,5 +1,6 @@
 package compiler.intermediate;
 
+import es.uned.lsi.compiler.intermediate.LabelFactory;
 import es.uned.lsi.compiler.intermediate.LabelIF;
 import es.uned.lsi.compiler.intermediate.ProcedureIF;
 import es.uned.lsi.compiler.semantic.ScopeIF;
@@ -13,6 +14,7 @@ public class Procedure
 {
     private String  name     = null;
     private ScopeIF scope    = null;
+    private LabelIF label;
         
     /**
      * Constructor for Variable.
@@ -53,8 +55,9 @@ public class Procedure
     @Override
     public final LabelIF getCodeLabel ()
     {
-        // TODO : Student Work
-        return null;
+    	if (label==null)
+    		label = new LabelFactory().create(name.toUpperCase());
+        return label;
     }
 
     /**

@@ -2,11 +2,9 @@
 
 program doce;
 
-
-
 var
         z,v: integer;
-
+		x: boolean;
 
 function decrementa (x:integer):integer;
 
@@ -14,7 +12,7 @@ var
         y:integer;
 
         begin
-            y:= x-1;
+            y:= 1;
             decrementa:=y;
 
         end;
@@ -24,7 +22,8 @@ begin
         write ("SUBPROGRAMAS FUNCIONES");
         writeln();
 
-        z:=3;
+        x:=z-3;
+		x:=z>2;
         v:= decrementa (z);
 
         write("v(2):");
