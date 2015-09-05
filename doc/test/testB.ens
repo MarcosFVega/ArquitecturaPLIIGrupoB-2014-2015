@@ -1,2 +1,5 @@
-Quadruple - [INICIAR null, null, null]
-Quadruple - [HALT null, null, null]
+INICIAR:
+MOVE #65535 .SP
+MOVE .SP .IY
+HALT
+

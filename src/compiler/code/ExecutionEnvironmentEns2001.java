@@ -93,7 +93,19 @@ public class ExecutionEnvironmentEns2001
     @Override
     public final String translate (QuadrupleIF quadruple)
     {      
-        //TODO: Student work
-        return quadruple.toString(); 
+    	String traduccion="";
+    	
+    	switch(quadruple.getOperation()){
+    		case "INICIAR": 
+    			traduccion = "INICIAR:\n"; ;
+    			traduccion = traduccion + "MOVE #65535 .SP\n";   
+    			traduccion = traduccion + "MOVE .SP .IY";    				
+    			break;
+    		case "HALT": 
+    			traduccion = "HALT\n"; break;    			
+    		default:
+    			break;
+    	}    	
+        return traduccion; 
     }
 }
