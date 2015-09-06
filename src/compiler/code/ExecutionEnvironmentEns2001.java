@@ -102,7 +102,35 @@ public class ExecutionEnvironmentEns2001
     			traduccion = traduccion + "MOVE .SP .IY";    				
     			break;
     		case "HALT": 
-    			traduccion = "HALT\n"; break;    			
+    			traduccion = "HALT"; break;
+    		case "SUB": 
+    			traduccion = "SUB"; break;    
+    		case "ASN": 
+    			traduccion = "ASN"; break; 
+    		case "BRF": 
+    			traduccion = "BRF"; break; 
+    		case "BR": 
+    			traduccion = "BR"; break; 
+    		case "CALL": 
+    			traduccion = "CALL"; break;
+    		case "INL": 
+    			traduccion = "INL"; break; 
+    		case "INC": 
+    			traduccion = "INC"; break; 
+    		case "REG_POING": 
+    			traduccion = "REG_POING"; break;
+    		case "WRITE": 
+    			traduccion = "WRITE"; break;
+    		case "WRITELN": 
+    			traduccion = "WRITELN"; break;
+    		case "MVA": 
+    			traduccion = "MVA"; break;
+    		case "MVP": 
+    			traduccion = "MVP"; break;
+    		case "LS": 
+    			traduccion = "LS"; break;
+    		case "REG": 
+    			traduccion = "REG"; break;
     		default:
     			break;
     	}    	

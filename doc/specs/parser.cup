@@ -30,6 +30,9 @@ action code {:
 	SemanticErrorManager semanticErrorManager = CompilerContext.getSemanticErrorManager ();
 	ScopeManagerIF       scopeManager         = CompilerContext.getScopeManager ();
 	FinalCodeFactoryIF   finalCodeFactory     = CompilerContext.getFinalCodeFactory ();
+	
+	int global_address = 0;
+	int s_size = 1;	
 
 :}	
 
@@ -202,6 +205,19 @@ axiom ::= PROGRAM:prg ID:id
                 cb.addQuadruples(dec.getIntermediateCode());
                 cb.addQuadruples(bloq.getIntermediateCode());
                 cb.addQuadruple("HALT", null);
+                
+                //Asignar posiciones de memoria variables
+                List<ScopeIF> scopes = scopeManager.getAllScopes();
+                for (ScopeIF scop: scopes){
+                	List<SymbolIF> symbols = scop.getSymbolTable().getSymbols();
+                	for (SymbolIF s: symbols){
+                		if(s instanceof SymbolVariable){
+                			s = (SymbolVariable) s;
+                			if (!s.isGlobal())	
+                				s.setAddress(0);
+                		}
+                	}
+                }
 
                 List intermediateCode = cb.create();                                 
                 
@@ -381,6 +397,8 @@ variabl ::= secuencia_IDs:sid DOS_PUNTOS tipo_datos:td PUNTO_Y_COMA
 				for(String s: ids){					
 					if(!(sTable.containsSymbol(s))){
 						SymbolVariable sV = new SymbolVariable(scope,s,td.getTipo());
+						sV.setGlobal(true);
+						sV.setAddress(global_address+s_size);
 						sTable.addSymbol(s,sV);		
 					}else{
 						semanticErrorManager.semanticFatalError("Variable ya creada en el mismo ambito");
@@ -621,7 +639,7 @@ exp ::= LITERAL_ENTERO:e
                         
 						Variable var = new Variable(id.getLexema(),scope);
 						
-						cb.addQuadruple("POINT", temp, var);                                    
+						cb.addQuadruple("MVP", temp, var);                                    
 						exp.setIntermediateCode(cb.create());
 						exp.setOperando(temp);
 										
@@ -767,7 +785,7 @@ exp ::= LITERAL_ENTERO:e
 			}else{			
 				ScopeIF scope = scopeManager.getCurrentScope();
 				
-				Expresion exp = new Expresion (scopeManager.searchType("BOOLEAN"));
+				Expresion exp = new Expresion (scopeManager.searchType("INTEGER"));
 				
 				TemporalFactory tf = new TemporalFactory(scope);
 				Temporal temp = (Temporal) tf.create();
@@ -778,7 +796,7 @@ exp ::= LITERAL_ENTERO:e
 				cb.addQuadruples (cod1);
 				cb.addQuadruples (cod2);
 						
-				cb.addQuadruple ("SUB", e1.getOperando(), e2.getOperando(), tf);
+				cb.addQuadruple ("SUB", e1.getOperando(), e2.getOperando(), temp);
 				
 				List cod=cb.create ();
 				exp.setIntermediateCode (cod); 
@@ -808,7 +826,7 @@ exp ::= LITERAL_ENTERO:e
 				cb.addQuadruples (cod1);
 				cb.addQuadruples (cod2);
 				
-				cb.addQuadruple ("OR", e1.getOperando(), e2.getOperando(), tf);
+				cb.addQuadruple ("OR", e1.getOperando(), e2.getOperando(), temp);
 				
 				List cod=cb.create ();
 				exp.setIntermediateCode (cod); 
@@ -838,7 +856,7 @@ exp ::= LITERAL_ENTERO:e
 				cb.addQuadruples (cod1);
 				cb.addQuadruples (cod2);
 						
-				cb.addQuadruple ("GT", e1.getOperando(), e2.getOperando(), tf);
+				cb.addQuadruple ("GT", e1.getOperando(), e2.getOperando(), temp);
 				
 				List cod=cb.create ();
 				exp.setIntermediateCode (cod); 
@@ -868,7 +886,7 @@ exp ::= LITERAL_ENTERO:e
 				cb.addQuadruples (cod1);
 				cb.addQuadruples (cod2);
 						
-				cb.addQuadruple ("EQ", e1.getOperando(), e2.getOperando(), tf);
+				cb.addQuadruple ("EQ", e1.getOperando(), e2.getOperando(), temp);
 				
 				List cod=cb.create ();
 				exp.setIntermediateCode (cod); 
@@ -1036,7 +1054,7 @@ sentencia_asignacion_izq ::= ID:id
 			                        
 									Variable var = new Variable(id.getLexema(),scope);
 									
-									cb.addQuadruple("POINT", temp, var);                                    
+									cb.addQuadruple("MVP", temp, var);                                    
 									sai.setIntermediateCode(cb.create());
 									sai.setOperando(temp);
 													
@@ -1104,19 +1122,60 @@ sentencia_asignacion_izq ::= ID:id
 								:};
 
 // Sentencia de control de flujo condicional if-then-else
-sentencia_if ::= IF PARENT_ABRIR exp:e PARENT_CERRAR THEN sentencias_then_else_for parte_else
+sentencia_if ::= IF PARENT_ABRIR exp:e PARENT_CERRAR THEN sentencias_then_else_for:stef parte_else:pe
 				{:	
 					if(!(e.getTipo() instanceof TypeBoolean)){
 						semanticErrorManager.semanticFatalError("La expresion de la condicion debe ser de tipo Boolean");
 					}
-					RESULT = new SentenciaIF();					
+					SentenciaIF sentencia = new SentenciaIF();
+					ScopeIF scope = scopeManager.getCurrentScope();
+					LabelFactory lf = new LabelFactory();
+					IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+					
+					LabelIF l1 = lf.create();
+					LabelIF l2 = lf.create();
+					cb.addQuadruples(e.getIntermediateCode());
+					cb.addQuadruple("BRF", l1);
+					cb.addQuadruples(stef.getIntermediateCode());
+					cb.addQuadruple("BR", l2);
+					cb.addQuadruple("INL", l1);
+					cb.addQuadruples(pe.getIntermediateCode());
+					cb.addQuadruple("INL", l2);
+					
+					sentencia.setIntermediateCode(cb.create());
+					
+					RESULT = sentencia;					
 				:};	
 
-sentencias_then_else_for ::= bloque PUNTO_Y_COMA {: RESULT = new SentenciasThenElseFor(); :}
-			| sentencia {: RESULT = new SentenciasThenElseFor(); :};
+sentencias_then_else_for ::= bloque:b PUNTO_Y_COMA 
+								{: 
+									ScopeIF scope = scopeManager.getCurrentScope();
+									SentenciasThenElseFor stef = new SentenciasThenElseFor();
+									IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+									cb.addQuadruples(b.getIntermediateCode());
+									stef.setIntermediateCode(cb.create());
+									RESULT = stef; 
+								:}
+			| sentencia:s 
+				{: 
+					ScopeIF scope = scopeManager.getCurrentScope();
+					SentenciasThenElseFor stef = new SentenciasThenElseFor();
+					IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+					cb.addQuadruples(s.getIntermediateCode());
+					stef.setIntermediateCode(cb.create());
+					RESULT = stef; 
+				:};
 
-parte_else ::= ELSE sentencias_then_else_for {: RESULT = new ParteElse(); :}
-		| ;
+parte_else ::= ELSE sentencias_then_else_for:stef 
+				{: 
+					ScopeIF scope = scopeManager.getCurrentScope();
+					ParteElse pe = new ParteElse();
+					IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+					cb.addQuadruples(stef.getIntermediateCode());
+					pe.setIntermediateCode(cb.create());
+					RESULT = pe; 
+				:}
+		| {: RESULT = new ParteElse(); :};
 
 // Sentencia de control de flujo iterativo for (las sentencias dentro de un bucle for siguen las mismas normas que para el if)
 sentencia_for ::= FOR PARENT_ABRIR ID:id DOS_PUNTOS_IGUAL exp:e1 TO exp:e2 PARENT_CERRAR DO sentencias_then_else_for:sent
@@ -1135,15 +1194,72 @@ sentencia_for ::= FOR PARENT_ABRIR ID:id DOS_PUNTOS_IGUAL exp:e1 TO exp:e2 PAREN
 								if (!t1.getName().equals("INTEGER") || !t2.getName().equals("INTEGER")){
 									semanticErrorManager.semanticFatalError("Las expresiones deben ser INTEGER");	
 								}
-								RESULT = new SentenciaFor();
+								SentenciaFor sf = new SentenciaFor();
+								IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+								LabelFactory lf = new LabelFactory();
+								TemporalFactory tf = new TemporalFactory(scope);
+								TemporalIF temp = tf.create();
+								
+								Variable var = new Variable(id.getLexema(), scope);
+								
+								LabelIF l1 = lf.create();
+								LabelIF l2 = lf.create();
+								
+								cb.addQuadruples(e1.getIntermediateCode());
+								cb.addQuadruple("ASN", e1.getOperando(),var);
+								cb.addQuadruples(e2.getIntermediateCode());
+								cb.addQuadruple("ASN", e2.getOperando(),temp);								
+								cb.addQuadruple("INL" , l1);
+								cb.addQuadruple("LS", var, temp);
+								cb.addQuadruple("BRF", l2);
+								cb.addQuadruples(sent.getIntermediateCode());
+								cb.addQuadruple("INC", var);
+								cb.addQuadruple("BR" , l1);
+								cb.addQuadruple("INL" , l2);
+								sf.setIntermediateCode(cb.create());
+								RESULT = sf;
 							}								
 						}					
 					:};
 
 // Sentencias write y writeln
-sentencia_write ::= WRITE PARENT_ABRIR parametro_write PARENT_CERRAR PUNTO_Y_COMA {: RESULT = new SentenciaWrite(); :}
-		| WRITELN PARENT_ABRIR PARENT_CERRAR PUNTO_Y_COMA {: RESULT = new SentenciaWrite(); :};
+sentencia_write ::= WRITE PARENT_ABRIR parametro_write:pw PARENT_CERRAR PUNTO_Y_COMA 
+						{: 
+							SentenciaWrite swrite = new SentenciaWrite();
+							ScopeIF scope = scopeManager.getCurrentScope();
+							IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+							cb.addQuadruples(pw.getIntermediateCode());
+							cb.addQuadruple("WRITE", pw.getOperando());
+							swrite.setIntermediateCode(cb.create());
+							RESULT = swrite; 
+						:}
+		| WRITELN PARENT_ABRIR PARENT_CERRAR PUNTO_Y_COMA 
+						{: 
+							SentenciaWrite swrite = new SentenciaWrite();
+							ScopeIF scope = scopeManager.getCurrentScope();
+							IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+							cb.addQuadruple("WRITELN", null);
+							swrite.setIntermediateCode(cb.create());
+							RESULT = swrite; 
+						:};
 
-parametro_write ::= exp:e {: RESULT = new ParametroWrite(); :} 
-		| LITERAL_CADENA {: RESULT = new ParametroWrite(); :}
-		| ;
+parametro_write ::= exp:e
+					{: 
+						ParametroWrite pw = new ParametroWrite();			
+						ScopeIF scope = scopeManager.getCurrentScope();
+						IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+						cb.addQuadruples(e.getIntermediateCode());
+						pw.setIntermediateCode(cb.create());
+						pw.setOperando(e.getOperando());			
+						RESULT = pw;
+					:} 
+		| LITERAL_CADENA:lit 
+			{: 	
+				ParametroWrite pw = new ParametroWrite();			
+				ScopeIF scope = scopeManager.getCurrentScope();
+				Value valor = new Value(lit.getLexema());
+				pw.setOperando(valor);			
+				RESULT = pw; 
+			:}
+		| {: RESULT = new ParametroWrite(); :};
+			

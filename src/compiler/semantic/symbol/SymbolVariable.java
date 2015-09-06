@@ -14,6 +14,8 @@ import es.uned.lsi.compiler.semantic.type.TypeIF;
 public class SymbolVariable
     extends SymbolBase
 {  
+	private boolean global;
+	private int address;
    
     /**
      * Constructor for SymbolVariable.
@@ -26,5 +28,24 @@ public class SymbolVariable
                            TypeIF type)
     {
         super (scope, name, type);
-    } 
+        global = false;
+    }
+
+	public boolean isGlobal() {
+		return global;
+	}
+
+	public void setGlobal(boolean global) {
+		this.global = global;
+	} 
+	    
+    public void setAddress(int address){
+    	this.address = address;
+    }
+    
+    public int getAddress(){
+    	return address;
+    }
+    
+    
 }
