@@ -13,6 +13,7 @@ public class Variable
     private String  name     = null;
     private ScopeIF scope    = null;
     private int address;
+    private boolean parametro;
         
     /**
      * Constructor for Variable.

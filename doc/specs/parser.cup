@@ -31,6 +31,7 @@ action code {:
 	ScopeManagerIF       scopeManager         = CompilerContext.getScopeManager ();
 	FinalCodeFactoryIF   finalCodeFactory     = CompilerContext.getFinalCodeFactory ();
 	
+	List<String> textos = new ArrayList<String>();
 	int global_address = 0;
 	int s_size = 1;	
 
@@ -115,7 +116,7 @@ non terminal DeclaracionSubprogramas decl_subprogramas;
 non terminal SecuenciaConstantes secuencia_constantes;
 non terminal Constante constante;
 non terminal LiteralEnteroOLogico literal_entero_o_logico;
-non terminal Token literal_logico;
+non terminal LiteralLogico literal_logico;
 non terminal SecuenciaTipos secuencia_tipos;
 non terminal Tipo tipo;
 non terminal SecuenciaVariables secuencia_variables;
@@ -200,31 +201,57 @@ axiom ::= PROGRAM:prg ID:id
 				ScopeIF scope = scopeManager.getCurrentScope();				          				
 				
                 IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
-                
+                                                
                 cb.addQuadruple("INICIAR",null);
                 cb.addQuadruples(dec.getIntermediateCode());
                 cb.addQuadruples(bloq.getIntermediateCode());
                 cb.addQuadruple("HALT", null);
-                
-                //Asignar posiciones de memoria variables
+                   
+                                
+                //Asignar posiciones relativas de memoria a variables no globales
                 List<ScopeIF> scopes = scopeManager.getAllScopes();
                 for (ScopeIF scop: scopes){
+                	int v_offset=0;
                 	List<SymbolIF> symbols = scop.getSymbolTable().getSymbols();
+                	List<TemporalIF> temporals = scop.getTemporalTable().getTemporals();
                 	for (SymbolIF s: symbols){
-                		if(s instanceof SymbolVariable){
-                			s = (SymbolVariable) s;
-                			if (!s.isGlobal())	
-                				s.setAddress(0);
+                		if(s instanceof SymbolVariable){                			
+                			SymbolVariable sv = (SymbolVariable)scop.getSymbolTable().getSymbol(s.getName());
+                			if (scop.getLevel()!=0) sv.setAddress(v_offset++);	             				
+                		}
+                		
+                		if(s instanceof SymbolConstant){                			
+                			SymbolConstant sc = (SymbolConstant)scop.getSymbolTable().getSymbol(s.getName());
+                			if (scop.getLevel()!=0){
+                				sc.setAddress(v_offset++);  
+                			}
+                			            				
+                		}  
+                	}
+                	for (SymbolIF s: symbols){
+                		if(s instanceof SymbolParameter){                			
+                			SymbolParameter sp = (SymbolParameter)scop.getSymbolTable().getSymbol(s.getName());
+                			if (scop.getLevel()!=0) sp.setAddress(v_offset++);	             				
                 		}
                 	}
+                	
+                	for (TemporalIF t: temporals){
+                		t.setAddress(v_offset++);
+                	}                	
                 }
-
+                
+                for (String texto: textos){
+                	Value val = new Value(textos.indexOf(texto));
+                	cb.addQuadruple("TEXT", texto, val);
+                }
+                
+                cb.addQuadruple("SALTO", null);
+                
                 List intermediateCode = cb.create();                                 
                 
                 Axioma axi = new Axioma();
                 axi.setIntermediateCode(intermediateCode);
-                RESULT = axi;
-               
+                RESULT = axi;               
 			:}; 
 		
 // Las declaraciones incluyen, de forma opcional pero siempre en este orden:
@@ -314,8 +341,25 @@ decl_subprogramas ::= decl_subprogramas:d_sub decl_procedimiento:d_pro
 		| {: RESULT = new DeclaracionSubprogramas(); :};
 
 // Declaracion de constantes (del programa principal o de un subprograma)
-secuencia_constantes ::= secuencia_constantes constante {: RESULT = new SecuenciaConstantes(); :} 
-						| constante {: RESULT = new SecuenciaConstantes(); :};
+secuencia_constantes ::= secuencia_constantes:sc constante:c 
+							{: 
+								SecuenciaConstantes sec = new SecuenciaConstantes();							
+								ScopeIF scope = scopeManager.getCurrentScope();
+								IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+								cb.addQuadruples(sc.getIntermediateCode());
+								cb.addQuadruples(c.getIntermediateCode());
+								sec.setIntermediateCode(cb.create());							
+								RESULT = sec; 
+							:} 
+						| constante:c 
+							{:
+								SecuenciaConstantes sec = new SecuenciaConstantes();							
+								ScopeIF scope = scopeManager.getCurrentScope();
+								IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+								cb.addQuadruples(c.getIntermediateCode());
+								sec.setIntermediateCode(cb.create());							
+								RESULT = sec;  
+							:};
 
 constante ::= ID:id IGUAL literal_entero_o_logico:lel PUNTO_Y_COMA
 			  {: 
@@ -331,17 +375,50 @@ constante ::= ID:id IGUAL literal_entero_o_logico:lel PUNTO_Y_COMA
 				  		if (tipoLiteral instanceof TypeInteger) type = scopeManager.searchType("INTEGER");
 				  	    else type = scopeManager.searchType("BOOLEAN");
 				  		SymbolConstant sC = new SymbolConstant (scope,name,type);
-				  		sTabla.addSymbol(sC);
+				  		if (scope.getLevel()==0) {
+				  			global_address = global_address+s_size;
+				  			sC.setAddress(global_address);				  			
+				  		}
 				  		
-				  		RESULT = new Constante();
+				  		sTabla.addSymbol(sC);
+				  		Variable var = new Variable(id.getLexema(),scope);
+				  		Constante c = new Constante();
+						IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+						cb.addQuadruple("ASN", var, lel.getOperando());
+						c.setIntermediateCode(cb.create());		
+				  		
+				  		RESULT = c;
 				  	}
 			  :};
 
-literal_entero_o_logico ::= LITERAL_ENTERO {: RESULT = new LiteralEnteroOLogico(scopeManager.searchType("INTEGER")); :}
-			| literal_logico {: RESULT = new LiteralEnteroOLogico(scopeManager.searchType("BOOLEAN")); :};
+literal_entero_o_logico ::= LITERAL_ENTERO:e
+							{: 
+								LiteralEnteroOLogico leol = new LiteralEnteroOLogico(scopeManager.searchType("INTEGER")); 
+								Value val = new Value(e.getLexema());
+								leol.setOperando(val);
+								RESULT = leol;
+							:}
+			| literal_logico:ll
+				{: 
+					LiteralEnteroOLogico leol = new LiteralEnteroOLogico(scopeManager.searchType("BOOLEAN"));
+					leol.setOperando(ll.getOperando());
+					RESULT = leol; 
+				:};
 
-literal_logico ::= TRUE:b {: RESULT = b; :}
-		| FALSE:b {: RESULT = b; :};
+literal_logico ::= TRUE:b 
+				{:  
+					LiteralLogico litlog = new LiteralLogico();
+					Value val = new Value(1);
+					litlog.setOperando(val);					
+					RESULT = litlog; 
+				:}
+		| FALSE:b 
+				{:  
+					LiteralLogico litlog = new LiteralLogico();
+					Value val = new Value(0);
+					litlog.setOperando(val);					
+					RESULT = litlog; 
+				:};
 
 // Declaracion de tipos (del programa principal o de un subprograma)
 secuencia_tipos ::= secuencia_tipos tipo | tipo {: RESULT = new SecuenciaTipos(); :};
@@ -397,8 +474,10 @@ variabl ::= secuencia_IDs:sid DOS_PUNTOS tipo_datos:td PUNTO_Y_COMA
 				for(String s: ids){					
 					if(!(sTable.containsSymbol(s))){
 						SymbolVariable sV = new SymbolVariable(scope,s,td.getTipo());
-						sV.setGlobal(true);
-						sV.setAddress(global_address+s_size);
+						if (scope.getLevel()==0) {
+				  			global_address = global_address+s_size;
+				  			sV.setAddress(global_address);				  			
+				  		}
 						sTable.addSymbol(s,sV);		
 					}else{
 						semanticErrorManager.semanticFatalError("Variable ya creada en el mismo ambito");
@@ -446,7 +525,7 @@ decl_procedimiento ::= PROCEDURE ID:id decl_parametros:dparam
 				           		
 				           		for (String s: ids){									
 									if(!(nTabla.containsSymbol(s))){
-										SymbolParameter simboloParametro = new SymbolParameter(scope,s,p.getTipo());
+										SymbolParameter simboloParametro = new SymbolParameter(nScope,s,p.getTipo());
 										nTabla.addSymbol(s,simboloParametro);	
 										tF.addId();	
 									}else{
@@ -508,7 +587,7 @@ decl_funcion ::= FUNCTION ID:id decl_parametros:dparam DOS_PUNTOS tipo_primitivo
 				           		for (String s: ids){
 									
 									if(!(nTabla.containsSymbol(s))){
-										SymbolParameter simboloParametro = new SymbolParameter(scope,s,p.getTipo());
+										SymbolParameter simboloParametro = new SymbolParameter(nScope,s,p.getTipo());
 										nTabla.addSymbol(s,simboloParametro);	
 										tF.addId();
 									}else{
@@ -796,7 +875,7 @@ exp ::= LITERAL_ENTERO:e
 				cb.addQuadruples (cod1);
 				cb.addQuadruples (cod2);
 						
-				cb.addQuadruple ("SUB", e1.getOperando(), e2.getOperando(), temp);
+				cb.addQuadruple ("SUB", temp, e1.getOperando(), e2.getOperando());
 				
 				List cod=cb.create ();
 				exp.setIntermediateCode (cod); 
@@ -1024,7 +1103,7 @@ sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUN
 							SentenciaAsignacion sa = new SentenciaAsignacion();
 							IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
 							cb.addQuadruples(e.getIntermediateCode());
-							cb.addQuadruple("ASN", e.getOperando(), sai.getOperando());
+							cb.addQuadruple("ASN",sai.getOperando(), e.getOperando());
 							sa.setIntermediateCode(cb.create());																				
 							RESULT = sa; 
 						:};
@@ -1206,9 +1285,9 @@ sentencia_for ::= FOR PARENT_ABRIR ID:id DOS_PUNTOS_IGUAL exp:e1 TO exp:e2 PAREN
 								LabelIF l2 = lf.create();
 								
 								cb.addQuadruples(e1.getIntermediateCode());
-								cb.addQuadruple("ASN", e1.getOperando(),var);
+								cb.addQuadruple("ASN",var, e1.getOperando());
 								cb.addQuadruples(e2.getIntermediateCode());
-								cb.addQuadruple("ASN", e2.getOperando(),temp);								
+								cb.addQuadruple("ASN",temp, e2.getOperando());								
 								cb.addQuadruple("INL" , l1);
 								cb.addQuadruple("LS", var, temp);
 								cb.addQuadruple("BRF", l2);
@@ -1257,6 +1336,7 @@ parametro_write ::= exp:e
 			{: 	
 				ParametroWrite pw = new ParametroWrite();			
 				ScopeIF scope = scopeManager.getCurrentScope();
+				textos.add(lit.getLexema());
 				Value valor = new Value(lit.getLexema());
 				pw.setOperando(valor);			
 				RESULT = pw; 

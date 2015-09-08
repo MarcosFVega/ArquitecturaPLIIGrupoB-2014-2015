@@ -1,32 +1,19 @@
-// subprogramas (paso por valor) funciones
+// constantes
 
-program doce;
+program tres;
+//
+const
+        cierto = true;
+        falso = false;
+        uno = 1;
 
-
-
-var
-        z,v: integer;
-
-
-function decrementa (x:integer):integer;
-
-var
-        y:integer;
-
-        begin
-            y:= x-1;
-            decrementa:=y;
-
-        end;
 
 begin
 
-        write ("SUBPROGRAMAS FUNCIONES");
-        writeln();
+	write("CONSTANTES");
+	writeln();
 
-        z:=3;
-        v:= decrementa (z);
+        write("uno(1):");
+        write(uno);
 
-        write("v(2):");
-        write(v);
 end.

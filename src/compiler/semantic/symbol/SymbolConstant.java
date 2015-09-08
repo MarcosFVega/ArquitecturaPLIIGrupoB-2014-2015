@@ -14,6 +14,7 @@ import es.uned.lsi.compiler.semantic.type.TypeIF;
 public class SymbolConstant
     extends SymbolBase
 {
+	private int address;
     
     /**
      * Constructor for SymbolConstant.
@@ -26,5 +27,15 @@ public class SymbolConstant
                            TypeIF type)
     {
         super (scope, name, type);
-    } 
+    }
+
+	public int getAddress() {
+		return address;
+	}
+
+	public void setAddress(int address) {
+		this.address = address;
+	} 
+    
+    
 }
