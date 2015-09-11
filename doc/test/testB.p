@@ -10,6 +10,7 @@ type
 
 var
         persona1: tipoPersona;
+		x: integer;
 
 
 begin
@@ -18,9 +19,10 @@ begin
 
         persona1.dni:=12345;
         persona1.casado:=true;
-
+		x:=persona1.dni;
+		write(x);
         write ("persona1.dni(12345):");
-        write (persona1.dni);
+       write (persona1.dni);
 
         write ("persona1.casado(true):");
         if (persona1.casado or false) then

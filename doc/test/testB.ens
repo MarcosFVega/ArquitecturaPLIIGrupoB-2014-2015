@@ -4,16 +4,24 @@ MOVE #65535, .SP
 MOVE .SP, .IX
 WRSTR /texto0
 WRSTR /SaltoLinea
-REG
-MOVE #12345, #-0[.IX]
-REG
-MOVE #1, #-1[.IX]
+MOVE #2, .R1
+MOVE /2, #-0[.IX]
+MOVE #12345, [.R1]
+MOVE #1, .R1
+MOVE /1, #-1[.IX]
+MOVE #1, [.R1]
+MOVE #2, .R1
+MOVE /2, #-2[.IX]
+MOVE #-2[.IX], /3
+WRINT /3
 WRSTR /texto1
-REG
-WRINT #-2[.IX]
+MOVE #2, .R1
+MOVE /2, #-3[.IX]
+WRINT #-3[.IX]
 WRSTR /texto2
-REG
-MOVE #-3[.IX], .R1
+MOVE #1, .R1
+MOVE /1, #-4[.IX]
+MOVE #-4[.IX], .R1
 OR .R1, #0
 BZ /L_0
 WRSTR /texto3

@@ -2,7 +2,10 @@ package compiler.code;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import compiler.intermediate.Temporal;
 import compiler.intermediate.Value;
@@ -11,7 +14,8 @@ import compiler.semantic.symbol.SymbolParameter;
 import compiler.semantic.symbol.SymbolVariable;
 import compiler.semantic.symbol.SymbolConstant;
 import compiler.semantic.type.TypeSimple;
-
+import compiler.semantic.type.TypeRecord;
+import compiler.syntax.nonTerminal.CampoRegistro;
 import es.uned.lsi.compiler.code.ExecutionEnvironmentIF;
 import es.uned.lsi.compiler.code.MemoryDescriptorIF;
 import es.uned.lsi.compiler.code.RegisterDescriptorIF;
@@ -206,7 +210,7 @@ public class ExecutionEnvironmentEns2001
     			traduccion = traduccion + "MOVE .A, " + resultado;
     			break;    
     		case "ASN": 
-    			//VARIABLE DONDE SE ASIGNAR
+    			//VARIABLE DONDE SE ASIGNA
     			if (res instanceof Variable){
     				Variable v = (Variable)res;
     				SymbolIF sv = v.getScope().getSymbolTable().getSymbol(v.getName());
@@ -441,7 +445,69 @@ public class ExecutionEnvironmentEns2001
     			traduccion = traduccion + "CMP " + operador1 + ", " + operador2;
     			break;    
     		case "REG": 
-    			traduccion = "REG"; break;
+    			Variable v1 = (Variable)op1;
+    			Variable v2 = (Variable)op2;
+    			t = (Temporal)res;
+    			sv = v1.getScope().getSymbolTable().getSymbol(v1.getName());
+    			
+    			if(sv.getScope().getLevel()==0){
+    				TypeRecord tr = (TypeRecord)sv.getType();
+    				HashMap<String,CampoRegistro> campos = tr.getCampos();
+    				
+    				Iterator it = campos.entrySet().iterator();
+    				int pos = 0;
+    				while (it.hasNext()) {
+    					pos++;
+	    				Map.Entry e = (Map.Entry)it.next();
+	    				if (v2.getName().equals(e.getKey().toString())) break;
+    				}
+    				offset = ((SymbolVariable) sv).getAddress()+(pos-1); 
+    				traduccion = "MOVE #" + offset + ", .R1\n";
+    				traduccion = traduccion + "MOVE /" + offset + ", #-" + t.getAddress() + "[.IX]";
+    			}
+    			
+    			break;
+    			
+    		case "AREG": 
+    			{
+    				if (op1 instanceof Value){    				
+        				Value v = (Value)op1;    	
+        				operador2 = "#" + v.getValue();
+        			}else if (op1 instanceof Variable){
+        				
+        				Variable v = (Variable)op1;
+        				sv = v.getScope().getSymbolTable().getSymbol(v.getName());
+        				if (sv instanceof SymbolParameter) offset = ((SymbolParameter) sv).getAddress();
+        				else if (sv instanceof SymbolConstant) offset = ((SymbolConstant) sv).getAddress();
+        				else offset = ((SymbolVariable) sv).getAddress();    				   				
+        				
+        				if (sv.getScope().getLevel()==0){
+        					operador2 = "/" + offset;
+        				}else{
+    	    				if (v.getScope().getName().equals(sv.getScope().getName()))
+    	    					operador2 ="#-" + offset + "[.IX]";
+    	    				else{	
+    	    					ScopeIF parent = sv.getScope().getParentScope();
+    	    					traduccion = traduccion + "MOVE #2[.IX], .R2";
+    	    					do{	 
+    		    					if (parent.getSymbolTable().containsSymbol(sv))
+    		    						operador2 = "#-" + offset + "[.R2]";
+    		    					else{
+    		    						parent = parent.getParentScope();
+    		    						traduccion = traduccion + "MOVE #2[.R2], .R2";
+    		    					}
+    	    					}while(!(parent.getSymbolTable().containsSymbol(sv)));
+    	    				}	  				 
+        				} 
+        			}else{
+        				t = (Temporal)op1;
+    	    			operador2 = "#-" + t.getAddress() + "[.IX]";
+        			}
+        			
+    				traduccion = "MOVE " + operador2 + ", [.R1]";
+    			}
+    			
+    			break;
     		case "OR": 
     			//OPERADOR 1
 				if (op1 instanceof Value){

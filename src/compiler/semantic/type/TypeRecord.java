@@ -64,8 +64,7 @@ public class TypeRecord
     @Override
     public int getSize ()
     {
-        // TODO: Student work
-        return 1;
+        return campos.size();
     }
 
 	public HashMap getCampos() {

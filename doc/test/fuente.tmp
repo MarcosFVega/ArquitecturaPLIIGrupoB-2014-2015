@@ -4,21 +4,37 @@ MOVE #65535, .SP
 MOVE .SP, .IX
 WRSTR /texto0
 WRSTR /SaltoLinea
-MOVE #0, /1
+MOVE #2, .R1
+MOVE /2, #-0[.IX]
+MOVE #12345, [.R1]
+MOVE #1, .R1
+MOVE /1, #-1[.IX]
+MOVE #1, [.R1]
+MOVE #2, .R1
+MOVE /2, #-2[.IX]
+MOVE #-2[.IX], /3
+WRINT /3
 WRSTR /texto1
-MOVE /1, .R1
-CMP .R1, #1
-BN /L_0
+MOVE #2, .R1
+MOVE /2, #-3[.IX]
+WRINT #-3[.IX]
 WRSTR /texto2
+MOVE #1, .R1
+MOVE /1, #-4[.IX]
+MOVE #-4[.IX], .R1
+OR .R1, #0
+BZ /L_0
+WRSTR /texto3
 BR /L_1
 L_0:
-WRSTR /texto3
+WRSTR /texto4
 L_1:
 HALT
 
-texto0: DATA "IF VARIABLES LOGICAS"
-texto1: DATA "true:"
-texto2: DATA "true"
-texto3: DATA "false"
+texto0: DATA "TIPOS ESTRUCTURADOS REGISTROS"
+texto1: DATA "persona1.dni(12345):"
+texto2: DATA "persona1.casado(true):"
+texto3: DATA "true"
+texto4: DATA "fail"
 SaltoLinea: DATA "\n"
 

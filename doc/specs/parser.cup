@@ -214,20 +214,29 @@ axiom ::= PROGRAM:prg ID:id
                 	int v_offset=0;
                 	List<SymbolIF> symbols = scop.getSymbolTable().getSymbols();
                 	List<TemporalIF> temporals = scop.getTemporalTable().getTemporals();
+                	
                 	for (SymbolIF s: symbols){
                 		if(s instanceof SymbolVariable){                			
                 			SymbolVariable sv = (SymbolVariable)scop.getSymbolTable().getSymbol(s.getName());
-                			if (scop.getLevel()!=0) sv.setAddress(v_offset++);	             				
+                			if (scop.getLevel()!=0){
+                				TypeIF t = sv.getType();
+                				if (t instanceof TypeRecord){ 
+                					sv.setAddress(v_offset++);
+                					v_offset = v_offset + t.getSize() - 1;	  
+                				}else{
+                					sv.setAddress(v_offset++);
+                				}
+                			}          				
                 		}
                 		
                 		if(s instanceof SymbolConstant){                			
                 			SymbolConstant sc = (SymbolConstant)scop.getSymbolTable().getSymbol(s.getName());
                 			if (scop.getLevel()!=0){
                 				sc.setAddress(v_offset++);  
-                			}
-                			            				
+                			}                			            				
                 		}  
                 	}
+                	
                 	for (SymbolIF s: symbols){
                 		if(s instanceof SymbolParameter){                			
                 			SymbolParameter sp = (SymbolParameter)scop.getSymbolTable().getSymbol(s.getName());
@@ -470,13 +479,19 @@ variabl ::= secuencia_IDs:sid DOS_PUNTOS tipo_datos:td PUNTO_Y_COMA
 				List<String> ids = sid.getIDs();
 				ScopeIF scope = scopeManager.getCurrentScope();
 				SymbolTableIF sTable = scope.getSymbolTable();	
-				
 				for(String s: ids){					
 					if(!(sTable.containsSymbol(s))){
 						SymbolVariable sV = new SymbolVariable(scope,s,td.getTipo());
 						if (scope.getLevel()==0) {
-				  			global_address = global_address+s_size;
-				  			sV.setAddress(global_address);				  			
+							TypeIF t = sV.getType();
+							if (t instanceof TypeRecord){
+								global_address = global_address+s_size;
+								sV.setAddress(global_address);
+								global_address = global_address+(s_size*t.getSize()-1);
+							}else{
+					  			global_address = global_address+s_size;
+					  			sV.setAddress(global_address);	
+					  		}			  			
 				  		}
 						sTable.addSymbol(s,sV);		
 					}else{
@@ -1071,6 +1086,11 @@ sentencia ::= sentencia_asignacion:s
 sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUNTO_Y_COMA
 						{:
 							ScopeIF scope = scopeManager.getCurrentScope();
+							SentenciaAsignacion sa = new SentenciaAsignacion();
+							IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
+							cb.addQuadruples(sai.getIntermediateCode());
+							cb.addQuadruples(e.getIntermediateCode());
+							
 							
 							if (!scopeManager.containsSymbol(sai.getId())){
 								semanticErrorManager.semanticFatalError("Simbolo " + sai.getId() + " no definido");
@@ -1081,11 +1101,13 @@ sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUN
 								if (tipo instanceof TypeInteger){	
 									if(!(e.getTipo() instanceof TypeInteger) && !(e.getTipo() instanceof TypeFunction)){ 
 										semanticErrorManager.semanticFatalError("Tipos incompatibles. Integer no es compatible con " + e.getTipo().getName());
-									}								
+									}	
+									cb.addQuadruple("ASN",sai.getOperando(), e.getOperando());							
 								}else if (tipo instanceof TypeBoolean && !(e.getTipo() instanceof TypeFunction)){	
 									if(!(e.getTipo() instanceof TypeBoolean)){
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");
-									}																										
+									}	
+									cb.addQuadruple("ASN",sai.getOperando(), e.getOperando());																									
 								}else if (tipo instanceof TypeRecord){	
 									TypeRecord tipoRegistro = (TypeRecord)tipo;
 									TypeIF tipoCampo = tipoRegistro.tipoCampo(sai.getCampo());
@@ -1093,18 +1115,15 @@ sentencia_asignacion ::= sentencia_asignacion_izq:sai DOS_PUNTOS_IGUAL exp:e PUN
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");											
 									}else if (tipoCampo instanceof TypeBoolean && (!(e.getTipo() instanceof TypeBoolean) && !(e.getTipo() instanceof TypeFunction))){
 										semanticErrorManager.semanticFatalError("Tipos incompatibles");
-									}																
+									}	
+									cb.addQuadruple("AREG",sai.getOperando(), e.getOperando());															
 								}else{	//PUNTERO	
 									if(!(e.getTipo() instanceof TypeInteger) && !(e.getTipo() instanceof TypeFunction)){ 
 										semanticErrorManager.semanticFatalError("Tipos incompatibles. Integer no es compatible con " + e.getTipo().getName());
 									}
 								}							
 							}	
-							SentenciaAsignacion sa = new SentenciaAsignacion();
-							IntermediateCodeBuilder cb = new IntermediateCodeBuilder(scope);
-							cb.addQuadruples(sai.getIntermediateCode());
-							cb.addQuadruples(e.getIntermediateCode());
-							cb.addQuadruple("ASN",sai.getOperando(), e.getOperando());
+							
 							sa.setIntermediateCode(cb.create());																				
 							RESULT = sa; 
 						:};
