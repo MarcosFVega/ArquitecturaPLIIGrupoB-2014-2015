@@ -1,5 +1,9 @@
 package compiler.intermediate;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import compiler.syntax.nonTerminal.Expresion;
 import es.uned.lsi.compiler.intermediate.LabelFactory;
 import es.uned.lsi.compiler.intermediate.LabelIF;
 import es.uned.lsi.compiler.intermediate.ProcedureIF;
@@ -15,6 +19,7 @@ public class Procedure
     private String  name     = null;
     private ScopeIF scope    = null;
     private LabelIF label;
+    private List<Expresion> parametros = new ArrayList<Expresion>();
         
     /**
      * Constructor for Variable.
@@ -47,8 +52,18 @@ public class Procedure
     {
         return scope;
     }
+    
+    
 
-    /**
+    public List<Expresion> getParametros() {
+		return parametros;
+	}
+
+	public void setParametros(List<Expresion> parametros) {
+		this.parametros = parametros;
+	}
+
+	/**
      * Returns the code label.
      * @return Returns the code label.
      */

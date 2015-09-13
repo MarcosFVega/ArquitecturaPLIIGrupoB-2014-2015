@@ -8,9 +8,9 @@ var
         z: integer;
 
 
-procedure decrementa (x:integer);
+	procedure decrementa (x:integer);
 
-var
+	var
         y:integer;
 
         begin

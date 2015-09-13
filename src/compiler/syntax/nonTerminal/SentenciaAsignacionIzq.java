@@ -8,6 +8,7 @@ public class SentenciaAsignacionIzq extends Sentencia{
 	private String campo;
 	private OperandIF operando;
 	private TypeIF tipo;
+	private boolean accesopuntero=false;
 	
 	public SentenciaAsignacionIzq(String id){
 		this.id=id;
@@ -58,4 +59,14 @@ public class SentenciaAsignacionIzq extends Sentencia{
 	public void setTipo(TypeIF tipo) {
 		this.tipo = tipo;
 	}
+
+	public boolean isAccesopuntero() {
+		return accesopuntero;
+	}
+
+	public void setAccesopuntero(boolean accesopuntero) {
+		this.accesopuntero = accesopuntero;
+	}
+	
+	
 }

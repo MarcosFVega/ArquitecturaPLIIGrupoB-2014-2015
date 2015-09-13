@@ -1,33 +1,32 @@
-// tipos estructurados RESGISTROS
+// subprogramas (paso por valor) procedimientos
 
-program nueve;
+program once;
 
-type
-        tipoPersona = record
-                dni: integer;
-                casado: boolean;
-        end;
+
 
 var
-        persona1: tipoPersona;
-		x: integer;
+        z: integer;
 
+
+procedure decrementa (x,f,v:integer);
+
+var
+        y:integer;
+
+        begin
+            y:= x-1;
+            write("y(2):");
+            write(y);
+
+        end;
 
 begin
-        write ("TIPOS ESTRUCTURADOS REGISTROS");
-		writeln();
 
-        persona1.dni:=12345;
-        persona1.casado:=true;
-		x:=persona1.dni;
-		write(x);
-        write ("persona1.dni(12345):");
-       write (persona1.dni);
+        write ("SUBPROGRAMAS PROCEDIMIENTOS");
+        writeln();
 
-        write ("persona1.casado(true):");
-        if (persona1.casado or false) then
-                write("true");
-        else
-                write("fail");
+        z:=3;
+        decrementa (z,8,8);
+
 
 end.

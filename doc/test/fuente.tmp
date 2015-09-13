@@ -2,39 +2,30 @@ ORG 20000
 INICIAR:
 MOVE #65535, .SP
 MOVE .SP, .IX
+BR /L_DECREMENTA_FIN
+L_DECREMENTA:
+MOVE #-2[.IX], .R1
+SUB .R1, #1
+MOVE .A, #-3[.IX]
+MOVE #-3[.IX], #-1[.IX]
 WRSTR /texto0
-WRSTR /SaltoLinea
-MOVE #2, .R1
-MOVE /2, #-0[.IX]
-MOVE #12345, [.R1]
-MOVE #1, .R1
-MOVE /1, #-1[.IX]
-MOVE #1, [.R1]
-MOVE #2, .R1
-MOVE /2, #-2[.IX]
-MOVE #-2[.IX], /3
-WRINT /3
+WRINT #-1[.IX]
+MOVE .IX, .SP
+MOVE [.IX], .IX
+MOVE #1[.IX], .R1
+BR [.R1]
+L_DECREMENTA_FIN:
 WRSTR /texto1
-MOVE #2, .R1
-MOVE /2, #-3[.IX]
-WRINT #-3[.IX]
-WRSTR /texto2
-MOVE #1, .R1
-MOVE /1, #-4[.IX]
-MOVE #-4[.IX], .R1
-OR .R1, #0
-BZ /L_0
-WRSTR /texto3
-BR /L_1
-L_0:
-WRSTR /texto4
-L_1:
+WRSTR /SaltoLinea
+MOVE #3, /1
+MOVE .IX, #-5[.IX]
+SUB .IX, #5
+MOVE .A, .IX
+MOVE .PC, #-4[.IX]
+BR /L_DECREMENTA
 HALT
 
-texto0: DATA "TIPOS ESTRUCTURADOS REGISTROS"
-texto1: DATA "persona1.dni(12345):"
-texto2: DATA "persona1.casado(true):"
-texto3: DATA "true"
-texto4: DATA "fail"
+texto0: DATA "y(2):"
+texto1: DATA "SUBPROGRAMAS PROCEDIMIENTOS"
 SaltoLinea: DATA "\n"
 
